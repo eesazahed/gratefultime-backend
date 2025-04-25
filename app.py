@@ -119,6 +119,57 @@ def add_entry():
         }
     }), 201
 
+
+@app.route('/entries/days', methods=['GET'])
+def get_entry_days():
+    user_id = request.args.get('user_id', type=int)
+    
+    if user_id is None:
+        return jsonify({'message': 'User ID is required'}), 400
+    
+    # Fetch unique days when the user has entries
+    entries = db.session.query(GratitudeEntry.timestamp).filter_by(user_id=user_id).distinct().all()
+    
+    # Format dates to just the day
+    entry_days = [entry[0].strftime('%Y-%m-%d') for entry in entries]
+    
+    return jsonify({
+        'message': 'Entry days retrieved successfully',
+        'data': entry_days
+    })
+
+
+@app.route('/entries/day', methods=['GET'])
+def get_entry_by_day():
+    user_id = request.args.get('user_id', type=int)
+    date = request.args.get('date', type=str)  # Expecting the date in 'YYYY-MM-DD' format
+    
+    if user_id is None or date is None:
+        return jsonify({'message': 'User ID and Date are required'}), 400
+    
+    # Fetch entries for the specific user and date
+    entries = GratitudeEntry.query.filter(
+        GratitudeEntry.user_id == user_id,
+        GratitudeEntry.timestamp.like(f"{date}%")
+    ).all()
+    
+    # Return entries for the given date
+    return jsonify({
+        'message': 'Entries for the day retrieved successfully',
+        'data': [{
+            'id': entry.id,
+            'user_id': entry.user_id,
+            'entry1': entry.entry1,
+            'entry2': entry.entry2,
+            'entry3': entry.entry3,
+            'user_prompt': entry.user_prompt,
+            'user_prompt_response': entry.user_prompt_response,
+            'timestamp': entry.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        } for entry in entries]
+    })
+
+
+
 # Route to get a specific entry by ID
 @app.route('/entries/<int:id>', methods=['GET'])
 def get_entry(id):
