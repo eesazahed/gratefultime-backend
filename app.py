@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -58,7 +58,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     preferred_unlock_time = db.Column(db.Time, default=time(20, 0))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -74,7 +74,7 @@ class GratitudeEntry(db.Model):
     entry3 = db.Column(db.String(255), nullable=False)
     user_prompt = db.Column(db.String(255), nullable=False)
     user_prompt_response = db.Column(db.String(255), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
 
 # Create tables
 with app.app_context():
@@ -152,7 +152,7 @@ def get_entries():
 @require_auth
 def add_entry():
     data = request.get_json()
-
+    print(datetime.now(timezone.utc))
     if not data.get('entry1'):
         return jsonify({'message': 'Gratitude entry #1 is required.', 'errorCode': 'entry1'}), 400
     if not data.get('entry2'):
@@ -163,6 +163,7 @@ def add_entry():
         return jsonify({'message': 'Reflection prompt response is required.', 'errorCode': 'promptResponse'}), 400
 
     today = datetime.combine(datetime.today(), datetime.min.time())
+
     existing = GratitudeEntry.query.filter(
         GratitudeEntry.user_id == request.user_id,
         GratitudeEntry.timestamp >= today
@@ -190,9 +191,12 @@ def add_entry():
 @require_auth
 def get_entry_days():
     entries = db.session.query(GratitudeEntry.timestamp).filter_by(user_id=request.user_id).distinct().all()
+   
+    print([e[0].isoformat() for e in entries])
+   
     return jsonify({
         'message': 'Entry days retrieved',
-        'data': [e[0].strftime('%Y-%m-%d') for e in entries]
+        'data': [e[0].isoformat() for e in entries]
     })
 
 @app.route('/entries/day', methods=['GET'])
