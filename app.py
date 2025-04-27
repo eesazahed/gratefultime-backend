@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import jwt
 import re
+from sqlalchemy import func
 
 # Initialize app
 app = Flask(__name__)
@@ -19,11 +20,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gratitude_journal.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-
 # Helpers
 def is_valid_email(email):
     pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     return re.match(pattern, email)
+
+def is_valid_username(username):
+    pattern = r'^[a-zA-Z0-9]+$'
+    return re.match(pattern, username)
 
 def encode_token(user_id):
     return jwt.encode({'user_id': user_id}, SECRET_KEY, algorithm='HS256')
@@ -50,6 +54,16 @@ def require_auth(f):
         request.user_id = user_id
         return f(*args, **kwargs)
     return decorated
+
+def is_email_or_username_taken(email, username):
+    existing_user = User.query.filter(
+        (func.lower(User.email) == email.lower()) | 
+        (func.lower(User.username) == username.lower())
+    ).first()
+    return existing_user
+
+def format_timestamp(timestamp):
+    return timestamp.strftime('%Y-%m-%d %H:%M:%S') + "+00:00"
 
 # Models
 class User(db.Model):
@@ -80,7 +94,6 @@ class GratitudeEntry(db.Model):
 with app.app_context():
     db.create_all()
 
-
 # Routes
 @app.route('/')
 def index():
@@ -89,20 +102,23 @@ def index():
 @app.route('/auth/signup', methods=['POST'])
 def signup():
     data = request.get_json()
-    email = data.get("email", "").strip()
-    username = data.get("username", "").strip()
+    email = data.get("email", "").strip().lower()
+    username = data.get("username", "").strip().lower()
     password = data.get("password", "").strip()
 
     if not email or not is_valid_email(email):
         return jsonify({'message': 'Enter a valid email.', 'errorCode': 'email'}), 400
     if not username or len(username) < 3:
         return jsonify({'message': 'Username must be at least 3 characters.', 'errorCode': 'username'}), 400
+    if not is_valid_username(username):
+        return jsonify({'message': 'Username can only contain letters and numbers.', 'errorCode': 'username'}), 400
     if not password or len(password) < 6:
         return jsonify({'message': 'Password must be at least 6 characters.', 'errorCode': 'password'}), 400
-    if User.query.filter_by(email=email).first():
-        return jsonify({'message': 'Email already registered.', 'errorCode': 'email'}), 400
-    if User.query.filter_by(username=username).first():
-        return jsonify({'message': 'Username already taken.', 'errorCode': 'username'}), 400
+    if is_email_or_username_taken(email, username):
+        if User.query.filter(func.lower(User.email) == email.lower()).first():
+            return jsonify({'message': 'Email already registered.', 'errorCode': 'email'}), 400
+        else:
+            return jsonify({'message': 'Username already taken.', 'errorCode': 'username'}), 400
 
     user = User(email=email, username=username)
     user.set_password(password)
@@ -113,23 +129,22 @@ def signup():
 @app.route('/auth/login', methods=['POST'])
 def login():
     data = request.get_json()
-    email = data.get("email", "").strip()
+    email = data.get("email", "").strip().lower()
     password = data.get("password", "").strip()
 
     if not email or not is_valid_email(email):
         return jsonify({'message': 'Enter a valid email.', 'errorCode': 'email'}), 400
-    if not password:
-        return jsonify({'message': 'Enter your password.', 'errorCode': 'password'}), 400
 
-    user = User.query.filter_by(email=email).first()
-
+    user = User.query.filter(func.lower(User.email) == email.lower()).first()
     if not user:
         return jsonify({'message': 'User does not exist.', 'errorCode': 'email'}), 404
+
+    if not password:
+        return jsonify({'message': 'Enter your password.', 'errorCode': 'password'}), 400
     if not user.check_password(password):
         return jsonify({'message': 'Invalid password.', 'errorCode': 'password'}), 401
 
     return jsonify({'token': encode_token(user.user_id)}), 200
-
 
 @app.route('/entries', methods=['GET'])
 @require_auth
@@ -144,7 +159,7 @@ def get_entries():
             'entry3': e.entry3,
             'user_prompt': e.user_prompt,
             'user_prompt_response': e.user_prompt_response,
-            'timestamp': e.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            'timestamp': format_timestamp(e.timestamp)
         } for e in entries]
     })
 
@@ -152,7 +167,6 @@ def get_entries():
 @require_auth
 def add_entry():
     data = request.get_json()
-    print(datetime.now(timezone.utc))
     if not data.get('entry1'):
         return jsonify({'message': 'Gratitude entry #1 is required.', 'errorCode': 'entry1'}), 400
     if not data.get('entry2'):
@@ -184,19 +198,16 @@ def add_entry():
 
     return jsonify({'message': 'Entry saved.', 'data': {
         'id': entry.id,
-        'timestamp': entry.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        'timestamp': format_timestamp(entry.timestamp)
     }}), 201
 
 @app.route('/entries/days', methods=['GET'])
 @require_auth
 def get_entry_days():
     entries = db.session.query(GratitudeEntry.timestamp).filter_by(user_id=request.user_id).distinct().all()
-   
-    print([e[0].isoformat() for e in entries])
-   
     return jsonify({
         'message': 'Entry days retrieved',
-        'data': [e[0].isoformat() for e in entries]
+        'data': [format_timestamp(e[0]) for e in entries]
     })
 
 @app.route('/entries/day', methods=['GET'])
@@ -220,7 +231,7 @@ def get_entry_by_day():
             'entry3': e.entry3,
             'user_prompt': e.user_prompt,
             'user_prompt_response': e.user_prompt_response,
-            'timestamp': e.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            'timestamp': format_timestamp(e.timestamp)
         } for e in entries]
     })
 
@@ -238,9 +249,8 @@ def get_entry(id):
         'entry3': entry.entry3,
         'user_prompt': entry.user_prompt,
         'user_prompt_response': entry.user_prompt_response,
-        'timestamp': entry.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        'timestamp': format_timestamp(entry.timestamp)
     }})
-
 
 @app.route('/entries/<int:id>', methods=['DELETE'])
 @require_auth
@@ -254,7 +264,6 @@ def delete_entry(id):
     db.session.delete(entry)
     db.session.commit()
     return jsonify({'message': 'Entry deleted'})
-
 
 # Run server
 if __name__ == '__main__':
