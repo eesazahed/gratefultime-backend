@@ -176,7 +176,7 @@ def add_entry():
     if not data.get('user_prompt_response'):
         return jsonify({'message': 'Reflection prompt response is required.', 'errorCode': 'promptResponse'}), 400
 
-    today = datetime.combine(datetime.today(), datetime.min.time())
+    today = datetime.combine(datetime.now(timezone.utc), datetime.min.time())
 
     existing = GratitudeEntry.query.filter(
         GratitudeEntry.user_id == request.user_id,
@@ -256,13 +256,15 @@ def get_entry(id):
 @require_auth
 def delete_entry(id):
     entry = GratitudeEntry.query.get_or_404(id)
+
     if entry.user_id != request.user_id:
         return jsonify({'message': 'Unauthorized'}), 403
-    if entry.timestamp.date() != datetime.today().date():
+    if entry.timestamp.date() != datetime.now(timezone.utc).date():
         return jsonify({'message': 'Can only delete today\'s entry'}), 400
 
     db.session.delete(entry)
     db.session.commit()
+
     return jsonify({'message': 'Entry deleted'})
 
 # Run server
