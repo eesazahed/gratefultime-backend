@@ -75,7 +75,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -167,14 +167,26 @@ def get_entries():
 @require_auth
 def add_entry():
     data = request.get_json()
+
     if not data.get('entry1'):
         return jsonify({'message': 'Gratitude entry #1 is required.', 'errorCode': 'entry1'}), 400
+    if len(data['entry1']) > 50:
+        return jsonify({'message': 'Gratitude entry #1 must be 50 characters or fewer.', 'errorCode': 'entry1'}), 400
+    
     if not data.get('entry2'):
         return jsonify({'message': 'Gratitude entry #2 is required.', 'errorCode': 'entry2'}), 400
+    if len(data['entry2']) > 50:
+        return jsonify({'message': 'Gratitude entry #2 must be 50 characters or fewer.', 'errorCode': 'entry2'}), 400
+
     if not data.get('entry3'):
         return jsonify({'message': 'Gratitude entry #3 is required.', 'errorCode': 'entry3'}), 400
+    if len(data['entry3']) > 50:
+        return jsonify({'message': 'Gratitude entry #3 must be 50 characters or fewer.', 'errorCode': 'entry3'}), 400
+    
     if not data.get('user_prompt_response'):
         return jsonify({'message': 'Reflection prompt response is required.', 'errorCode': 'promptResponse'}), 400
+    if len(data['user_prompt_response']) > 100:
+        return jsonify({'message': 'Reflection prompt response must be 100 characters or fewer.', 'errorCode': 'promptResponse'}), 400
 
     today = datetime.combine(datetime.now(timezone.utc), datetime.min.time())
 
