@@ -21,22 +21,28 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # Helpers
+
+
 def is_valid_email(email):
     pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     return re.match(pattern, email)
+
 
 def is_valid_username(username):
     pattern = r'^[a-zA-Z0-9]+$'
     return re.match(pattern, username)
 
+
 def encode_token(user_id):
     return jwt.encode({'user_id': user_id}, SECRET_KEY, algorithm='HS256')
+
 
 def decode_token(token):
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=['HS256'])['user_id']
     except:
         return None
+
 
 def require_auth(f):
     @wraps(f)
@@ -55,30 +61,37 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+
 def is_email_or_username_taken(email, username):
     existing_user = User.query.filter(
-        (func.lower(User.email) == email.lower()) | 
+        (func.lower(User.email) == email.lower()) |
         (func.lower(User.username) == username.lower())
     ).first()
     return existing_user
+
 
 def format_timestamp(timestamp):
     return timestamp.strftime('%Y-%m-%d %H:%M:%S') + "+00:00"
 
 # Models
+
+
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     preferred_unlock_time = db.Column(db.Time, default=time(20, 0))
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True),
+                           default=datetime.now(timezone.utc))
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        self.password_hash = generate_password_hash(
+            password, method='pbkdf2:sha256')
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
 
 class GratitudeEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -88,16 +101,21 @@ class GratitudeEntry(db.Model):
     entry3 = db.Column(db.String(255), nullable=False)
     user_prompt = db.Column(db.String(255), nullable=False)
     user_prompt_response = db.Column(db.String(255), nullable=False)
-    timestamp = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
+    timestamp = db.Column(db.DateTime(timezone=True),
+                          default=datetime.now(timezone.utc))
+
 
 # Create tables
 with app.app_context():
     db.create_all()
 
 # Routes
+
+
 @app.route('/')
 def index():
     return jsonify({'message': 'Server running'})
+
 
 @app.route('/auth/signup', methods=['POST'])
 def signup():
@@ -107,24 +125,25 @@ def signup():
     password = data.get("password", "").strip()
 
     if not email or not is_valid_email(email):
-        return jsonify({'message': 'Enter a valid email.', 'errorCode': 'email'}), 400
+        return jsonify({'message': 'Enter a valid email', 'errorCode': 'email'}), 400
     if not username or len(username) < 3:
-        return jsonify({'message': 'Username must be at least 3 characters.', 'errorCode': 'username'}), 400
+        return jsonify({'message': 'Username must be at least 3 characters', 'errorCode': 'username'}), 400
     if not is_valid_username(username):
-        return jsonify({'message': 'Username can only contain letters and numbers.', 'errorCode': 'username'}), 400
+        return jsonify({'message': 'Username can only contain letters and numbers', 'errorCode': 'username'}), 400
     if not password or len(password) < 6:
-        return jsonify({'message': 'Password must be at least 6 characters.', 'errorCode': 'password'}), 400
+        return jsonify({'message': 'Password must be at least 6 characters', 'errorCode': 'password'}), 400
     if is_email_or_username_taken(email, username):
         if User.query.filter(func.lower(User.email) == email.lower()).first():
-            return jsonify({'message': 'Email already registered.', 'errorCode': 'email'}), 400
+            return jsonify({'message': 'Email already registered', 'errorCode': 'email'}), 400
         else:
-            return jsonify({'message': 'Username already taken.', 'errorCode': 'username'}), 400
+            return jsonify({'message': 'Username already taken', 'errorCode': 'username'}), 400
 
     user = User(email=email, username=username)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
     return jsonify({'token': encode_token(user.user_id)}), 201
+
 
 @app.route('/auth/login', methods=['POST'])
 def login():
@@ -133,23 +152,37 @@ def login():
     password = data.get("password", "").strip()
 
     if not email or not is_valid_email(email):
-        return jsonify({'message': 'Enter a valid email.', 'errorCode': 'email'}), 400
+        return jsonify({'message': 'Enter a valid email', 'errorCode': 'email'}), 400
 
     user = User.query.filter(func.lower(User.email) == email.lower()).first()
     if not user:
-        return jsonify({'message': 'User does not exist.', 'errorCode': 'email'}), 404
+        return jsonify({'message': 'User does not exist', 'errorCode': 'email'}), 404
 
     if not password:
-        return jsonify({'message': 'Enter your password.', 'errorCode': 'password'}), 400
+        return jsonify({'message': 'Enter your password', 'errorCode': 'password'}), 400
     if not user.check_password(password):
-        return jsonify({'message': 'Invalid password.', 'errorCode': 'password'}), 401
+        return jsonify({'message': 'Invalid password', 'errorCode': 'password'}), 401
 
     return jsonify({'token': encode_token(user.user_id)}), 200
+
 
 @app.route('/entries', methods=['GET'])
 @require_auth
 def get_entries():
-    entries = GratitudeEntry.query.filter_by(user_id=request.user_id).order_by(GratitudeEntry.timestamp.desc()).all()
+    DEFAULT_LIMIT = 10
+    DEFAULT_OFFSET = 0
+
+    limit = int(request.args.get('limit', DEFAULT_LIMIT))
+    offset = int(request.args.get('offset', DEFAULT_OFFSET))
+
+    total_entries_count = GratitudeEntry.query.filter_by(
+        user_id=request.user_id).count()
+    entries_query = GratitudeEntry.query.filter_by(
+        user_id=request.user_id).order_by(GratitudeEntry.timestamp.desc())
+    entries = entries_query.offset(offset).limit(limit).all()
+
+    next_offset = offset + limit if offset + limit < total_entries_count else None
+
     return jsonify({
         'message': 'Entries retrieved successfully',
         'data': [{
@@ -160,8 +193,10 @@ def get_entries():
             'user_prompt': e.user_prompt,
             'user_prompt_response': e.user_prompt_response,
             'timestamp': format_timestamp(e.timestamp)
-        } for e in entries]
+        } for e in entries],
+        'nextOffset': next_offset
     })
+
 
 @app.route('/entries', methods=['POST'])
 @require_auth
@@ -169,24 +204,24 @@ def add_entry():
     data = request.get_json()
 
     if not data.get('entry1'):
-        return jsonify({'message': 'Gratitude entry #1 is required.', 'errorCode': 'entry1'}), 400
+        return jsonify({'message': 'Gratitude entry #1 is required', 'errorCode': 'entry1'}), 400
     if len(data['entry1']) > 50:
-        return jsonify({'message': 'Gratitude entry #1 must be 50 characters or fewer.', 'errorCode': 'entry1'}), 400
-    
+        return jsonify({'message': 'Gratitude entry #1 must be 50 characters or fewer', 'errorCode': 'entry1'}), 400
+
     if not data.get('entry2'):
         return jsonify({'message': 'Gratitude entry #2 is required.', 'errorCode': 'entry2'}), 400
     if len(data['entry2']) > 50:
-        return jsonify({'message': 'Gratitude entry #2 must be 50 characters or fewer.', 'errorCode': 'entry2'}), 400
+        return jsonify({'message': 'Gratitude entry #2 must be 50 characters or fewer', 'errorCode': 'entry2'}), 400
 
     if not data.get('entry3'):
         return jsonify({'message': 'Gratitude entry #3 is required.', 'errorCode': 'entry3'}), 400
     if len(data['entry3']) > 50:
-        return jsonify({'message': 'Gratitude entry #3 must be 50 characters or fewer.', 'errorCode': 'entry3'}), 400
-    
+        return jsonify({'message': 'Gratitude entry #3 must be 50 characters or fewer', 'errorCode': 'entry3'}), 400
+
     if not data.get('user_prompt_response'):
-        return jsonify({'message': 'Reflection prompt response is required.', 'errorCode': 'promptResponse'}), 400
+        return jsonify({'message': 'Reflection prompt response is required', 'errorCode': 'promptResponse'}), 400
     if len(data['user_prompt_response']) > 100:
-        return jsonify({'message': 'Reflection prompt response must be 100 characters or fewer.', 'errorCode': 'promptResponse'}), 400
+        return jsonify({'message': 'Reflection prompt response must be 100 characters or fewer', 'errorCode': 'promptResponse'}), 400
 
     today = datetime.combine(datetime.now(timezone.utc), datetime.min.time())
 
@@ -195,7 +230,7 @@ def add_entry():
         GratitudeEntry.timestamp >= today
     ).first()
     if existing:
-        return jsonify({'message': 'Already submitted today.', 'errorCode': 'submission'}), 400
+        return jsonify({'message': 'Already submitted today', 'errorCode': 'submission'}), 400
 
     entry = GratitudeEntry(
         user_id=request.user_id,
@@ -213,14 +248,17 @@ def add_entry():
         'timestamp': format_timestamp(entry.timestamp)
     }}), 201
 
+
 @app.route('/entries/days', methods=['GET'])
 @require_auth
 def get_entry_days():
-    entries = db.session.query(GratitudeEntry.timestamp).filter_by(user_id=request.user_id).distinct().all()
+    entries = db.session.query(GratitudeEntry.timestamp).filter_by(
+        user_id=request.user_id).distinct().all()
     return jsonify({
         'message': 'Entry days retrieved',
         'data': [format_timestamp(e[0]) for e in entries]
     })
+
 
 @app.route('/entries/day', methods=['GET'])
 @require_auth
@@ -247,6 +285,7 @@ def get_entry_by_day():
         } for e in entries]
     })
 
+
 @app.route('/entries/<int:id>', methods=['GET'])
 @require_auth
 def get_entry(id):
@@ -264,6 +303,7 @@ def get_entry(id):
         'timestamp': format_timestamp(entry.timestamp)
     }})
 
+
 @app.route('/entries/<int:id>', methods=['DELETE'])
 @require_auth
 def delete_entry(id):
@@ -278,6 +318,7 @@ def delete_entry(id):
     db.session.commit()
 
     return jsonify({'message': 'Entry deleted'})
+
 
 # Run server
 if __name__ == '__main__':
