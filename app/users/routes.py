@@ -1,9 +1,29 @@
 from flask import Blueprint, request, jsonify
 from .. import db
-from ..models import User
-from ..helpers.utils import require_auth
+from ..models import User, GratitudeEntry
+from ..helpers.utils import require_auth, format_timestamp
 
 users_bp = Blueprint('users', __name__)
+
+
+# GET MOST RECENT ENTRY TIMESTAMP
+@users_bp.route('/recententrytimestamp', methods=['GET'])
+@require_auth
+def get_recent_entry():
+    entry = (GratitudeEntry.query
+             .filter_by(user_id=request.user_id)
+             .order_by(GratitudeEntry.timestamp.desc())
+             .first())
+
+    if not entry:
+        return jsonify({'message': 'No entries found', 'data': None})
+
+    return jsonify({
+        'message': 'Most recent entry retrieved successfully',
+        'data': {
+            'timestamp': format_timestamp(entry.timestamp)
+        }
+    })
 
 
 # GET USER INFO
