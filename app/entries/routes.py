@@ -7,6 +7,7 @@ from ..helpers.utils import require_auth, format_timestamp
 entries_bp = Blueprint('entries', __name__)
 
 
+# GETS ENTRIES WITH PAGINATION
 @entries_bp.route('', methods=['GET'])
 @require_auth
 def get_entries():
@@ -35,6 +36,7 @@ def get_entries():
     })
 
 
+# SUBMITS AN ENTRY
 @entries_bp.route('', methods=['POST'])
 @require_auth
 def add_entry():
@@ -64,6 +66,7 @@ def add_entry():
     }}), 201
 
 
+# GETS ALL THE DAYS THAT A USER HAS CREATED AN ENTRY
 @entries_bp.route('/days', methods=['GET'])
 @require_auth
 def get_entry_days():
@@ -72,6 +75,7 @@ def get_entry_days():
     return jsonify({'message': 'Entry days retrieved', 'data': [format_timestamp(e[0]) for e in entries]})
 
 
+# GET A SPECIFIC DAY
 @entries_bp.route('/day', methods=['GET'])
 @require_auth
 def get_entry_by_day():
@@ -79,11 +83,13 @@ def get_entry_by_day():
     if not date:
         return jsonify({'message': 'Date is required'}), 400
 
+    yyyy_mm_dd = datetime.fromisoformat(date).date()
+
     entries = GratitudeEntry.query.filter(
         GratitudeEntry.user_id == request.user_id,
-        GratitudeEntry.timestamp.like(f"{date}%")
+        GratitudeEntry.timestamp.like(f"{yyyy_mm_dd}%")
     ).all()
-
+    print(entries)
     return jsonify({'message': 'Entries retrieved', 'data': [{
         'id': e.id,
         'entry1': e.entry1,
@@ -95,6 +101,7 @@ def get_entry_by_day():
     } for e in entries]})
 
 
+# GET A SPECIFIC ENTRY BY ID
 @entries_bp.route('/<int:id>', methods=['GET'])
 @require_auth
 def get_entry(id):
@@ -112,6 +119,7 @@ def get_entry(id):
     }})
 
 
+# DELETE A SPECIFIC ENTRY
 @entries_bp.route('/<int:id>', methods=['DELETE'])
 @require_auth
 def delete_entry(id):
