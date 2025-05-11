@@ -26,23 +26,6 @@ def get_recent_entry():
     })
 
 
-# GET USER INFO
-@users_bp.route('/info', methods=['GET'])
-@require_auth
-def get_user_info():
-    user = User.query.get_or_404(request.user_id)
-
-    return jsonify({
-        'message': 'User information retrieved successfully',
-        'data': {
-            'user_id': user.user_id,
-            'email': user.email,
-            'username': user.username,
-            'preferred_unlock_time': user.preferred_unlock_time
-        }
-    })
-
-
 # GET UNLOCK TIME
 @users_bp.route('/unlocktime', methods=['GET'])
 @require_auth
