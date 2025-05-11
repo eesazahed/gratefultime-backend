@@ -6,6 +6,7 @@ from ..helpers.utils import require_auth
 users_bp = Blueprint('users', __name__)
 
 
+# GET USER INFO
 @users_bp.route('/info', methods=['GET'])
 @require_auth
 def get_user_info():
@@ -22,6 +23,7 @@ def get_user_info():
     })
 
 
+# GET UNLOCK TIME
 @users_bp.route('/unlocktime', methods=['GET'])
 @require_auth
 def get_unlock_time():
@@ -35,6 +37,7 @@ def get_unlock_time():
     })
 
 
+# UPDATE UNLOCK TIME
 @users_bp.route('/unlocktime', methods=['PUT'])
 @require_auth
 def update_unlock_time():
