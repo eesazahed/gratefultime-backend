@@ -9,6 +9,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     preferred_unlock_time = db.Column(db.Integer, default=20)
+    notifs_on = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime(timezone=True),
                            default=datetime.now(timezone.utc))
 
