@@ -9,6 +9,7 @@ class User(db.Model):
     apple_user_id = db.Column(db.String(255), unique=True, nullable=True)
     preferred_unlock_time = db.Column(db.Integer, default=20)
     notifs_on = db.Column(db.Boolean, default=True)
+    expo_push_token = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True),
                            default=datetime.now(timezone.utc))
 

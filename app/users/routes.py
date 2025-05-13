@@ -75,3 +75,24 @@ def update_user_settings():
             'notifs_on': user.notifs_on
         }
     })
+
+
+# UPDATE EXPO PUSH NOTIF TOKEN
+@users_bp.route('/update_push_token', methods=['POST'])
+@require_auth
+def update_push_token():
+    data = request.get_json()
+    expo_push_token = data.get('expoPushToken')
+
+    if not expo_push_token:
+        return jsonify({'message': 'Push token is required', 'errorCode': 'expoPushToken'}), 400
+
+    user = User.query.get_or_404(request.user_id)
+
+    user.expo_push_token = expo_push_token
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Push token updated successfully',
+        'data': {'expoPushToken': expo_push_token}
+    })

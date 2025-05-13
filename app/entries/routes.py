@@ -93,6 +93,7 @@ def add_entry():
 def get_entry_days():
     entries = db.session.query(GratitudeEntry.timestamp).filter_by(
         user_id=request.user_id).distinct().all()
+
     return jsonify({'message': 'Entry days retrieved', 'data': [format_timestamp(e[0]) for e in entries]})
 
 
