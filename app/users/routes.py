@@ -96,3 +96,19 @@ def update_push_token():
         'message': 'Push token updated successfully',
         'data': {'expoPushToken': expo_push_token}
     })
+
+
+# DELETE USER ACCOUNT
+@users_bp.route('/delete_account', methods=['DELETE'])
+@require_auth
+def delete_account():
+    user = User.query.get_or_404(request.user_id)
+    user.account_active = False
+
+    GratitudeEntry.query.filter_by(user_id=request.user_id).delete()
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Goodbye'
+    })

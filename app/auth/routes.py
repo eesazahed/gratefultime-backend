@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from ..models import User
 from .. import db
 from ..helpers.utils import encode_token, is_email_taken, verify_apple_token
+from ..config import Config
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -33,7 +34,22 @@ def applelogin():
 
     user = User.query.filter_by(apple_user_id=apple_user_id).first()
 
+    if user:
+        if not user.account_active:
+            user.account_active = True
+            db.session.commit()
+
     if not user:
+        if Config.DEV_MODE:
+            user = User(
+                email="eszhd@icloud.com",
+                username="Eesa Zahed",
+                apple_user_id=apple_user_id,
+            )
+            db.session.add(user)
+            db.session.commit()
+            return jsonify({'token': encode_token(user.user_id)}), 200
+
         if not email:
             return jsonify({'message': 'Email required on first Apple login'}), 400
 
@@ -43,7 +59,7 @@ def applelogin():
         user = User(
             email=email,
             username=full_name_str,
-            apple_user_id=apple_user_id
+            apple_user_id=apple_user_id,
         )
         db.session.add(user)
         db.session.commit()
