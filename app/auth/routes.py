@@ -1,59 +1,51 @@
 from flask import Blueprint, request, jsonify
 from ..models import User
 from .. import db
-from ..helpers.utils import (
-    is_valid_email, is_valid_username, encode_token,
-    is_email_or_username_taken
-)
-from sqlalchemy import func
+from ..helpers.utils import encode_token, is_email_taken, verify_apple_token
 
 auth_bp = Blueprint('auth', __name__)
 
 
-@auth_bp.route('/signup', methods=['POST'])
-def signup():
+@auth_bp.route('/applelogin', methods=['POST'])
+def applelogin():
     data = request.get_json()
+    identity_token = data.get("identityToken")
+    apple_user_id = data.get("user")
     email = data.get("email", "").strip().lower()
-    username = data.get("username", "").strip().lower()
-    password = data.get("password", "").strip()
+    fullName = data.get("fullName")
 
-    if not email or not is_valid_email(email):
-        return jsonify({'message': 'Enter a valid email', 'errorCode': 'email'}), 400
-    if not username or len(username) < 3:
-        return jsonify({'message': 'Username must be at least 3 characters', 'errorCode': 'username'}), 400
-    if not is_valid_username(username):
-        return jsonify({'message': 'Username can only contain letters and numbers', 'errorCode': 'username'}), 400
-    if not password or len(password) < 6:
-        return jsonify({'message': 'Password must be at least 6 characters', 'errorCode': 'password'}), 400
-    if is_email_or_username_taken(email, username):
-        if User.query.filter(func.lower(User.email) == email.lower()).first():
-            return jsonify({'message': 'Email already registered', 'errorCode': 'email'}), 400
-        else:
-            return jsonify({'message': 'Username already taken', 'errorCode': 'username'}), 400
+    given_name = fullName.get("givenName")
+    family_name = fullName.get("familyName")
+    full_name_str = f"{given_name} {family_name}" if given_name or family_name else ""
 
-    user = User(email=email, username=username)
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({'token': encode_token(user.user_id)}), 201
+    if not identity_token or not apple_user_id:
+        return jsonify({'message': 'Missing Apple identity token or user ID'}), 400
 
+    try:
+        payload = verify_apple_token(identity_token)
+    except Exception as e:
+        return jsonify({'message': 'Invalid identity token', 'error': str(e)}), 401
 
-@auth_bp.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "").strip()
+    token_user_id = payload.get("sub")
 
-    if not email or not is_valid_email(email):
-        return jsonify({'message': 'Enter a valid email', 'errorCode': 'email'}), 400
+    if token_user_id != apple_user_id:
+        return jsonify({'message': 'Token user ID mismatch'}), 401
 
-    user = User.query.filter(func.lower(User.email) == email.lower()).first()
+    user = User.query.filter_by(apple_user_id=apple_user_id).first()
+
     if not user:
-        return jsonify({'message': 'User does not exist', 'errorCode': 'email'}), 404
+        if not email:
+            return jsonify({'message': 'Email required on first Apple login'}), 400
 
-    if not password:
-        return jsonify({'message': 'Enter your password', 'errorCode': 'password'}), 400
-    if not user.check_password(password):
-        return jsonify({'message': 'Invalid password', 'errorCode': 'password'}), 401
+        if is_email_taken(email):
+            return jsonify({'message': 'Account conflict. Email already taken'}), 400
+
+        user = User(
+            email=email,
+            username=full_name_str,
+            apple_user_id=apple_user_id
+        )
+        db.session.add(user)
+        db.session.commit()
 
     return jsonify({'token': encode_token(user.user_id)}), 200

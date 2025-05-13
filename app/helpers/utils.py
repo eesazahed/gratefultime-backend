@@ -1,19 +1,17 @@
-import re
 import jwt
+import requests
 from flask import request, jsonify
 from functools import wraps
-from datetime import datetime
+from jwt.algorithms import RSAAlgorithm
+from jwt import get_unverified_header
+from sqlalchemy import func
 from ..config import Config
 from ..models import User
-from sqlalchemy import func
+import datetime
 
 
-def is_valid_email(email):
-    return re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email)
-
-
-def is_valid_username(username):
-    return re.match(r'^[a-zA-Z0-9]+$', username)
+def format_timestamp(timestamp):
+    return timestamp.strftime('%Y-%m-%d %H:%M:%S') + "+00:00"
 
 
 def encode_token(user_id):
@@ -25,6 +23,10 @@ def decode_token(token):
         return jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])['user_id']
     except:
         return None
+
+
+def is_email_taken(email):
+    return User.query.filter(func.lower(User.email) == email.lower()).first()
 
 
 def require_auth(f):
@@ -45,12 +47,28 @@ def require_auth(f):
     return decorated
 
 
-def is_email_or_username_taken(email, username):
-    return User.query.filter(
-        (func.lower(User.email) == email.lower()) |
-        (func.lower(User.username) == username.lower())
-    ).first()
+def get_public_key_from_apple(kid):
+    response = requests.get(Config.APPLE_KEYS_URL)
+    if response.status_code != 200:
+        raise Exception("Failed to fetch Apple public keys")
+
+    keys = response.json().get("keys", [])
+    key = next((k for k in keys if k["kid"] == kid), None)
+    if not key:
+        raise Exception("No key found with matching kid")
+
+    return RSAAlgorithm.from_jwk(key)
 
 
-def format_timestamp(timestamp):
-    return timestamp.strftime('%Y-%m-%d %H:%M:%S') + "+00:00"
+def verify_apple_token(identity_token):
+    header = get_unverified_header(identity_token)
+    public_key = get_public_key_from_apple(header["kid"])
+
+    return jwt.decode(
+        identity_token,
+        public_key,
+        algorithms=["RS256"],
+        audience=Config.APPLE_AUDIENCE,
+        issuer=Config.APPLE_ISSUER,
+        leeway=datetime.timedelta(seconds=300)
+    )

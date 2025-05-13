@@ -36,8 +36,6 @@ def get_user_info():
         'message': 'User information retrieved successfully',
         'data': {
             'user_id': user.user_id,
-            'email': user.email,
-            'username': user.username,
             'preferred_unlock_time': user.preferred_unlock_time,
             'notifs_on': user.notifs_on
         }
