@@ -18,10 +18,12 @@ def create_app():
         from .auth.routes import auth_bp
         from .entries.routes import entries_bp
         from .users.routes import users_bp
+        from .ai.routes import ai_bp
 
-        app.register_blueprint(auth_bp, url_prefix='/auth')
-        app.register_blueprint(entries_bp, url_prefix='/entries')
-        app.register_blueprint(users_bp, url_prefix='/users')
+        app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
+        app.register_blueprint(entries_bp, url_prefix='/api/v1/entries')
+        app.register_blueprint(users_bp, url_prefix='/api/v1/users')
+        app.register_blueprint(ai_bp, url_prefix='/api/v1/ai')
 
         from .models import User, GratitudeEntry
         db.create_all()
