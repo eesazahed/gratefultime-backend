@@ -37,7 +37,6 @@ def get_user_info():
         'data': {
             'user_id': user.user_id,
             'preferred_unlock_time': user.preferred_unlock_time,
-            'notifs_on': user.notifs_on
         }
     })
 
@@ -59,20 +58,12 @@ def update_user_settings():
             return jsonify({'message': 'Unlock time must be a valid integer', 'errorCode': 'unlockTime'}), 400
         user.preferred_unlock_time = unlock_time
 
-    if 'notifs_on' in data:
-        notifs_on = data['notifs_on']
-
-        if not isinstance(notifs_on, bool):
-            return jsonify({'message': 'Notifications preference must be a boolean', 'errorCode': 'notifsOn'}), 400
-        user.notifs_on = notifs_on
-
     db.session.commit()
 
     return jsonify({
         'message': 'User settings updated successfully',
         'data': {
             'preferred_unlock_time': user.preferred_unlock_time,
-            'notifs_on': user.notifs_on
         }
     })
 

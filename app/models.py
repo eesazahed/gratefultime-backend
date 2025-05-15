@@ -8,7 +8,6 @@ class User(db.Model):
     email = db.Column(db.String(128), unique=True, nullable=True)
     apple_user_id = db.Column(db.String(255), unique=True, nullable=True)
     preferred_unlock_time = db.Column(db.Integer, default=20)
-    notifs_on = db.Column(db.Boolean, default=True)
     account_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime(timezone=True),
                            default=datetime.now(timezone.utc))

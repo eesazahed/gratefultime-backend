@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone
 from .. import db
-from ..models import GratitudeEntry
+from ..models import GratitudeEntry, User
 from ..helpers.utils import require_auth, format_timestamp
 
 entries_bp = Blueprint('entries', __name__)
@@ -40,6 +40,10 @@ def get_entries():
 @entries_bp.route('', methods=['POST'])
 @require_auth
 def add_entry():
+    user = User.query.filter_by(user_id=request.user_id).first()
+    if not user or not user.account_active:
+        return jsonify({'message': 'Your account is inactive', 'errorCode': 'submission'}), 403
+
     data = request.get_json()
 
     if not data.get('entry1'):
@@ -107,20 +111,20 @@ def get_entry_by_day():
 
     yyyy_mm_dd = datetime.fromisoformat(date).date()
 
-    entries = GratitudeEntry.query.filter(
+    entry = GratitudeEntry.query.filter(
         GratitudeEntry.user_id == request.user_id,
         GratitudeEntry.timestamp.like(f"{yyyy_mm_dd}%")
-    ).all()
-    print(entries)
-    return jsonify({'message': 'Entries retrieved', 'data': [{
-        'id': e.id,
-        'entry1': e.entry1,
-        'entry2': e.entry2,
-        'entry3': e.entry3,
-        'user_prompt': e.user_prompt,
-        'user_prompt_response': e.user_prompt_response,
-        'timestamp': format_timestamp(e.timestamp)
-    } for e in entries]})
+    ).first_or_404()
+
+    return jsonify({'message': 'entry retrieved', 'data': {
+        'id': entry.id,
+        'entry1': entry.entry1,
+        'entry2': entry.entry2,
+        'entry3': entry.entry3,
+        'user_prompt': entry.user_prompt,
+        'user_prompt_response': entry.user_prompt_response,
+        'timestamp': format_timestamp(entry.timestamp)
+    }})
 
 
 # GET A SPECIFIC ENTRY BY ID
