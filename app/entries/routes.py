@@ -101,6 +101,17 @@ def get_entry_days():
     return jsonify({'message': 'Entry days retrieved', 'data': [format_timestamp(e[0]) for e in entries]})
 
 
+# FETCHES THE LAST 31 ENTRIES
+@entries_bp.route('/last31', methods=['GET'])
+@require_auth
+def last31():
+    entries = db.session.query(GratitudeEntry.timestamp).filter_by(
+        user_id=request.user_id).order_by(
+        GratitudeEntry.timestamp.desc()).limit(31).all()
+
+    return jsonify({'message': 'Entry days retrieved', 'data': [format_timestamp(e[0]) for e in entries]})
+
+
 # GET A SPECIFIC DAY
 @entries_bp.route('/day', methods=['GET'])
 @require_auth
