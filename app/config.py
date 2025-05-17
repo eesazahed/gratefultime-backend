@@ -11,4 +11,4 @@ class Config:
     SECRET_KEY = os.environ['SECRET_KEY']
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    DEV_MODE = True  # todo: turn off in production
+    DEV_MODE = False
