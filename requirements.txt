@@ -1,8 +1,9 @@
-flask
-flask_sqlalchemy
-flask_cors
-pyjwt
-requests
-pytz
-psycopg2
-psycopg2-binary
+flask>=2.3.0
+flask_sqlalchemy>=3.0.0
+flask_cors>=3.0.10
+pyjwt>=2.7.0
+requests>=2.31.0
+pytz>=2023.3
+psycopg2-binary>=2.9.6
+setuptools>=65.5.0
+wheel>=0.38.4
