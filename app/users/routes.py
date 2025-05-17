@@ -37,6 +37,7 @@ def get_user_info():
         'data': {
             'user_id': user.user_id,
             'preferred_unlock_time': user.preferred_unlock_time,
+            'user_timezone': user.user_timezone
         }
     })
 
@@ -57,6 +58,13 @@ def update_user_settings():
         except ValueError:
             return jsonify({'message': 'Unlock time must be a valid integer', 'errorCode': 'unlockTime'}), 400
         user.preferred_unlock_time = unlock_time
+
+    if 'user_timezone' in data:
+        try:
+            user.user_timezone = data['user_timezone']
+            print(user.user_timezone)
+        except:
+            return jsonify({'message': 'Could not update time zone', 'errorCode': 'timezone'}), 400
 
     db.session.commit()
 

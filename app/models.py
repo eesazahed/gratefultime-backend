@@ -6,6 +6,7 @@ class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(128), nullable=True)
     email = db.Column(db.String(128), unique=True, nullable=True)
+    user_timezone = db.Column(db.String(64), nullable=True)
     apple_user_id = db.Column(db.String(255), unique=True, nullable=True)
     preferred_unlock_time = db.Column(db.Integer, default=20)
     account_active = db.Column(db.Boolean, default=True)

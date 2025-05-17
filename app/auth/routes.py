@@ -14,6 +14,10 @@ def applelogin():
     apple_user_id = data.get("user")
     email = data.get("email", "").strip().lower()
     fullName = data.get("fullName")
+    user_timezone = data.get("user_timezone")
+
+    if not user_timezone:
+        return jsonify({'message': 'Could not fetch user timezone'}), 400
 
     given_name = fullName.get("givenName")
     family_name = fullName.get("familyName")
@@ -45,6 +49,7 @@ def applelogin():
                 email="eszhd@icloud.com",
                 username="Eesa Zahed",
                 apple_user_id=apple_user_id,
+                user_timezone=user_timezone
             )
             db.session.add(user)
             db.session.commit()
@@ -60,6 +65,7 @@ def applelogin():
             email=email,
             username=full_name_str,
             apple_user_id=apple_user_id,
+            user_timezone=user_timezone
         )
         db.session.add(user)
         db.session.commit()

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from .. import db
 from ..models import GratitudeEntry, User
 from ..helpers.utils import require_auth, format_timestamp
+import pytz
 
 entries_bp = Blueprint('entries', __name__)
 
@@ -46,32 +47,21 @@ def add_entry():
 
     data = request.get_json()
 
-    if not data.get('entry1'):
-        return jsonify({'message': 'Entry is required', 'errorCode': 'entry1'}), 400
-    if len(data['entry1']) > 50:
-        return jsonify({'message': 'Entry must be 50 characters or fewer', 'errorCode': 'entry1'}), 400
+    user_tz = pytz.timezone(user.user_timezone)
 
-    if not data.get('entry2'):
-        return jsonify({'message': 'Entry is required', 'errorCode': 'entry2'}), 400
-    if len(data['entry2']) > 50:
-        return jsonify({'message': 'Entry must be 50 characters or fewer', 'errorCode': 'entry2'}), 400
+    now_utc = datetime.now(timezone.utc)
+    now_local = now_utc.astimezone(user_tz)
 
-    if not data.get('entry3'):
-        return jsonify({'message': 'Entry is required', 'errorCode': 'entry3'}), 400
-    if len(data['entry3']) > 50:
-        return jsonify({'message': 'Entry must be 50 characters or fewer', 'errorCode': 'entry3'}), 400
+    start_of_today_local = now_local.replace(
+        hour=0, minute=0, second=0, microsecond=0)
+    start_of_today_utc = start_of_today_local.astimezone(pytz.utc)
 
-    if not data.get('user_prompt_response'):
-        return jsonify({'message': 'Reflection prompt response is required', 'errorCode': 'promptResponse'}), 400
-    if len(data['user_prompt_response']) > 100:
-        return jsonify({'message': 'Reflection prompt response must be 100 characters or fewer', 'errorCode': 'promptResponse'}), 400
-
-    today = datetime.combine(datetime.now(timezone.utc), datetime.min.time())
-
-    if GratitudeEntry.query.filter(
+    existing_entry = GratitudeEntry.query.filter(
         GratitudeEntry.user_id == request.user_id,
-        GratitudeEntry.timestamp >= today
-    ).first():
+        GratitudeEntry.timestamp >= start_of_today_utc
+    ).first()
+
+    if existing_entry:
         return jsonify({'message': 'Already submitted today', 'errorCode': 'submission'}), 400
 
     entry = GratitudeEntry(
@@ -79,7 +69,7 @@ def add_entry():
         entry1=data['entry1'],
         entry2=data['entry2'],
         entry3=data['entry3'],
-        user_prompt=data['user_prompt'],
+        user_prompt=data.get('user_prompt'),
         user_prompt_response=data['user_prompt_response']
     )
     db.session.add(entry)
@@ -101,15 +91,43 @@ def get_entry_days():
     return jsonify({'message': 'Entry days retrieved', 'data': [format_timestamp(e[0]) for e in entries]})
 
 
-# FETCHES THE LAST 31 ENTRIES
-@entries_bp.route('/last31', methods=['GET'])
+# COUNT THE DAYS A USER HAS POSTED THIS MONTH
+@entries_bp.route('/user_month_days', methods=['GET'])
 @require_auth
-def last31():
-    entries = db.session.query(GratitudeEntry.timestamp).filter_by(
-        user_id=request.user_id).order_by(
-        GratitudeEntry.timestamp.desc()).limit(31).all()
+def user_month_days():
+    user = db.session.query(User).filter_by(user_id=request.user_id).first()
+    if not user or not user.user_timezone:
+        return jsonify({'error': 'User or timezone not found'}), 404
 
-    return jsonify({'message': 'Entry days retrieved', 'data': [format_timestamp(e[0]) for e in entries]})
+    user_tz = pytz.timezone(user.user_timezone)
+
+    now_utc = datetime.now(timezone.utc)
+    now_user_tz = now_utc.astimezone(user_tz)
+
+    start_of_month_user = now_user_tz.replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0)
+    if start_of_month_user.month == 12:
+        next_month = start_of_month_user.replace(
+            year=start_of_month_user.year + 1, month=1)
+    else:
+        next_month = start_of_month_user.replace(
+            month=start_of_month_user.month + 1)
+
+    start_utc = start_of_month_user.astimezone(pytz.utc)
+    end_utc = next_month.astimezone(pytz.utc)
+
+    timestamps_utc = db.session.query(GratitudeEntry.timestamp).filter(
+        GratitudeEntry.user_id == request.user_id,
+        GratitudeEntry.timestamp >= start_utc,
+        GratitudeEntry.timestamp < end_utc
+    ).all()
+
+    days = set()
+    for (ts_utc,) in timestamps_utc:
+        local_date = ts_utc.astimezone(user_tz).date()
+        days.add(local_date)
+    print(len(days))
+    return jsonify({'message': 'Count of days with entries this month', 'days_count': len(days)})
 
 
 # GET A SPECIFIC DAY
