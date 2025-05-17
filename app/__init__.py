@@ -30,6 +30,6 @@ def create_app():
 
         @app.route('/')
         def index():
-            return render_template('index.html')
+            return render_template('index.html', app_id=Config.APP_ID)
 
     return app
