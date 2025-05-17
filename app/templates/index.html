@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GratefulTime.app</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+          sans-serif;
+        background-color: #121212;
+        color: #e0e0e0;
+        line-height: 1.6;
+      }
+      a {
+        color: #82aaff;
+        text-decoration: none;
+      }
+      a:hover,
+      a:focus {
+        text-decoration: underline;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      section {
+        padding: 2rem 0;
+        border-bottom: 1px solid #2c2c2c;
+      }
+
+      #about {
+        flex: 1;
+      }
+      #about h1 {
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        color: #82aaff;
+      }
+      #about p {
+        max-width: 600px;
+        margin-bottom: 1rem;
+        font-weight: 400;
+      }
+      #about ul {
+        margin-left: 1.25rem;
+        list-style-type: disc;
+        max-width: 600px;
+      }
+      #about ul li {
+        margin-bottom: 0.5rem;
+      }
+      #about h1 {
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        color: #82aaff;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      #about h1:hover,
+      #about h1:focus {
+        text-decoration: underline;
+      }
+
+      #privacy {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 50vh;
+        padding-right: 1rem;
+      }
+      #privacy h2 {
+        font-weight: 600;
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+        color: #82aaff;
+      }
+      #privacy h3 {
+        font-weight: 600;
+        font-size: 1.2rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      #privacy p,
+      #privacy ul {
+        margin-bottom: 1rem;
+        font-weight: 300;
+        font-size: 0.95rem;
+        color: #cfcfcf;
+      }
+      #privacy ul {
+        list-style-type: disc;
+        margin-left: 1.25rem;
+      }
+      #privacy ul li {
+        margin-bottom: 0.5rem;
+      }
+
+      #privacy::-webkit-scrollbar {
+        width: 8px;
+      }
+      #privacy::-webkit-scrollbar-thumb {
+        background-color: #444;
+        border-radius: 4px;
+      }
+      #privacy::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      @media (max-width: 600px) {
+        #about h1 {
+          font-size: 2rem;
+        }
+        #privacy {
+          max-height: 40vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <section id="about" aria-label="About GratefulTime app">
+        <h1>
+          <a
+            href="https://apps.apple.com/app/idYOUR_APP_ID"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GratefulTime on the App Store"
+          >
+            GratefulTime.app
+          </a>
+        </h1>
+        <p>
+          GratefulTime is an iOS app designed to cultivate a daily gratitude
+          practice. Every day at a user-selected time, it sends a notification
+          prompting you to list three things you are grateful for alongside a
+          custom prompt.
+        </p>
+        <p>Key features include:</p>
+        <ul>
+          <li>Daily notifications based on preferred time and time zone</li>
+          <li>Entry of three gratitude items plus a customizable prompt</li>
+          <li>Calendar view to browse and review past entries</li>
+          <li>Adjustable settings for unlock time and time zone</li>
+          <li>
+            Secure Sign In with Apple authentication with minimal data storage
+          </li>
+          <li>AI-generated monthly summaries of your gratitude entries</li>
+          <li>Progress tracking with a monthly completion progress bar</li>
+          <li>Sleek, modern UI with dark mode and minimalistic design</li>
+        </ul>
+        <p>Available exclusively on iOS.</p>
+      </section>
+
+      <section id="privacy" aria-label="Privacy Policy">
+        <h2>Privacy Policy</h2>
+
+        <h3>1. Introduction</h3>
+        <p>
+          GratefulTime.app ("the App") prioritizes your privacy and data
+          security. This policy explains what data we collect, how we use it,
+          and your rights.
+        </p>
+
+        <h3>2. Information We Collect</h3>
+        <p>
+          <strong>2.1 User Provided Information:</strong> Upon signing in with
+          Apple, we obtain minimal authentication data. If you consent, we store
+          your email address, full name, and time zone.
+        </p>
+        <p>
+          <strong>2.2 Automatic Data:</strong> No automatic collection of
+          personal data beyond device time zone required for notifications.
+        </p>
+
+        <h3>3. Use of Information</h3>
+        <p>
+          Information is used solely to authenticate, personalize, schedule
+          notifications, generate AI summaries, and improve the app securely.
+        </p>
+
+        <h3>4. Data Storage and Security</h3>
+        <p>
+          We store minimal data securely, without sharing with third parties,
+          adhering to Apple's privacy standards.
+        </p>
+
+        <h3>5. User Control and Rights</h3>
+        <ul>
+          <li>You control the information you provide.</li>
+          <li>
+            You can update or delete your personal info in settings or by
+            contacting support.
+          </li>
+          <li>Opting out of optional data does not affect app use.</li>
+          <li>Deleting the app or account removes stored data.</li>
+        </ul>
+
+        <h3>6. Notifications</h3>
+        <p>
+          Local notifications are sent at your preferred time and can be
+          disabled in device settings.
+        </p>
+
+        <h3>7. Children's Privacy</h3>
+        <p>
+          The app is not for children under 13, and we do not knowingly collect
+          data from them.
+        </p>
+
+        <h3>8. Changes to This Policy</h3>
+        <p>
+          We may update this policy; users will be notified of significant
+          changes.
+        </p>
+
+        <h3>9. Contact</h3>
+        <p>
+          Questions? Contact:
+          <a href="mailto:eszhd@icloud.com">eszhd@icloud.com</a>
+        </p>
+
+        <h3>10. Legal Compliance</h3>
+        <p>
+          This policy complies with applicable data protection laws, including
+          GDPR and CCPA where relevant.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

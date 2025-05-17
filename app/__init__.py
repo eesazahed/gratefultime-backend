@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
@@ -30,6 +30,6 @@ def create_app():
 
         @app.route('/')
         def index():
-            return {'message': 'Server running'}
+            return render_template('index.html')
 
     return app
