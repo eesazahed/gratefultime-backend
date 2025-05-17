@@ -4,3 +4,5 @@ flask_cors
 pyjwt
 requests
 pytz
+psycopg2
+psycopg2-binary

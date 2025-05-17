@@ -2,8 +2,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone
 from .. import db
 from ..models import GratitudeEntry, User
-from ..helpers.utils import require_auth
-import pytz
+from ..helpers.utils import require_auth, convert_utc_to_local
 import requests
 from ..config import Config
 
@@ -17,13 +16,15 @@ def summarize_month_entries():
     if not user or not user.user_timezone:
         return jsonify({'error': 'User or timezone not found'}), 404
 
-    user_tz = pytz.timezone(user.user_timezone)
-
     now_utc = datetime.now(timezone.utc)
-    now_user_tz = now_utc.astimezone(user_tz)
+    try:
+        now_user_tz = convert_utc_to_local(now_utc, user.user_timezone)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
     start_of_month_user = now_user_tz.replace(
         day=1, hour=0, minute=0, second=0, microsecond=0)
+
     if start_of_month_user.month == 12:
         next_month_user = start_of_month_user.replace(
             year=start_of_month_user.year + 1, month=1)
@@ -31,8 +32,8 @@ def summarize_month_entries():
         next_month_user = start_of_month_user.replace(
             month=start_of_month_user.month + 1)
 
-    start_utc = start_of_month_user.astimezone(pytz.utc)
-    end_utc = next_month_user.astimezone(pytz.utc)
+    start_utc = start_of_month_user.astimezone(timezone.utc)
+    end_utc = next_month_user.astimezone(timezone.utc)
 
     entries = db.session.query(GratitudeEntry).filter(
         GratitudeEntry.user_id == request.user_id,
@@ -45,7 +46,12 @@ def summarize_month_entries():
 
     combined_text = ""
     for e in entries:
-        date_local = e.timestamp.astimezone(user_tz).date()
+        try:
+            date_local = convert_utc_to_local(
+                e.timestamp, user.user_timezone).date()
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+
         combined_text += (
             f"Date: {date_local}\n"
             f"  Gratitude 1: {e.entry1}\n"

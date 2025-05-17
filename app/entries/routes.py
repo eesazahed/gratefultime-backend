@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timezone
 from .. import db
 from ..models import GratitudeEntry, User
-from ..helpers.utils import require_auth, format_timestamp
+from ..helpers.utils import require_auth, format_timestamp, convert_utc_to_local
 import pytz
 
 entries_bp = Blueprint('entries', __name__)
@@ -47,10 +47,11 @@ def add_entry():
 
     data = request.get_json()
 
-    user_tz = pytz.timezone(user.user_timezone)
-
-    now_utc = datetime.now(timezone.utc)
-    now_local = now_utc.astimezone(user_tz)
+    try:
+        now_local = convert_utc_to_local(
+            datetime.now(timezone.utc), user.user_timezone)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
     start_of_today_local = now_local.replace(
         hour=0, minute=0, second=0, microsecond=0)
@@ -99,10 +100,11 @@ def user_month_days():
     if not user or not user.user_timezone:
         return jsonify({'error': 'User or timezone not found'}), 404
 
-    user_tz = pytz.timezone(user.user_timezone)
-
-    now_utc = datetime.now(timezone.utc)
-    now_user_tz = now_utc.astimezone(user_tz)
+    try:
+        now_user_tz = convert_utc_to_local(
+            datetime.now(timezone.utc), user.user_timezone)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
     start_of_month_user = now_user_tz.replace(
         day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -124,9 +126,13 @@ def user_month_days():
 
     days = set()
     for (ts_utc,) in timestamps_utc:
-        local_date = ts_utc.astimezone(user_tz).date()
+        try:
+            local_date = convert_utc_to_local(
+                ts_utc, user.user_timezone).date()
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
         days.add(local_date)
-    print(len(days))
+
     return jsonify({'message': 'Count of days with entries this month', 'days_count': len(days)})
 
 

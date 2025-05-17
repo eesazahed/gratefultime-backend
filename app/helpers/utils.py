@@ -8,6 +8,7 @@ from sqlalchemy import func
 from ..config import Config
 from ..models import User
 import datetime
+import pytz
 
 
 def format_timestamp(timestamp):
@@ -72,3 +73,13 @@ def verify_apple_token(identity_token):
         issuer=Config.APPLE_ISSUER,
         leeway=datetime.timedelta(seconds=300)
     )
+
+
+def convert_utc_to_local(utc_dt, timezone_str):
+    if timezone_str not in pytz.all_timezones:
+        raise ValueError(f"Invalid timezone: {timezone_str}")
+
+    local_tz = pytz.timezone(timezone_str)
+    utc_dt = utc_dt.replace(tzinfo=pytz.utc)
+    local_dt = utc_dt.astimezone(local_tz)
+    return local_dt
