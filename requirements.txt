@@ -1,7 +1,7 @@
 flask>=2.3.0
 flask_sqlalchemy>=3.0.0
 flask_cors>=3.0.10
-pyjwt>=2.7.0
+pyjwt==1.7.1
 requests>=2.31.0
 pytz>=2023.3
 psycopg2-binary>=2.9.6
