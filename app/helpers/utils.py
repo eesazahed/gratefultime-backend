@@ -17,7 +17,9 @@ def format_timestamp(timestamp):
 
 
 def encode_token(user_id):
-    return jwt.encode({'user_id': user_id}, Config.SECRET_KEY, algorithm='HS256')
+    token = jwt.encode({'user_id': user_id},
+                       Config.SECRET_KEY, algorithm='HS256')
+    return token.decode('utf-8') if isinstance(token, bytes) else token
 
 
 def decode_token(token):
@@ -65,7 +67,6 @@ def get_public_key_from_apple(kid):
 
 def verify_apple_token(identity_token):
     header = get_unverified_header(identity_token)
-    print(header["kid"])
     public_key = get_public_key_from_apple(header["kid"])
 
     return jwt.decode(
