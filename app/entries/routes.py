@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from .. import db
 from ..models import GratitudeEntry, User
 from ..helpers.utils import require_auth, format_timestamp, convert_utc_to_local
@@ -137,18 +137,24 @@ def user_month_days():
 
 
 # GET A SPECIFIC DAY
+
 @entries_bp.route('/day', methods=['GET'])
 @require_auth
 def get_entry_by_day():
-    date = request.args.get('date')
-    if not date:
+    date_str = request.args.get('date')
+    if not date_str:
         return jsonify({'message': 'Date is required'}), 400
 
-    yyyy_mm_dd = datetime.fromisoformat(date).date()
+    yyyy_mm_dd = datetime.fromisoformat(date_str).date()
+
+    start_of_day = datetime.combine(
+        yyyy_mm_dd, datetime.min.time()).replace(tzinfo=pytz.utc)
+    end_of_day = start_of_day + timedelta(days=1)
 
     entry = GratitudeEntry.query.filter(
         GratitudeEntry.user_id == request.user_id,
-        GratitudeEntry.timestamp.like(f"{yyyy_mm_dd}%")
+        GratitudeEntry.timestamp >= start_of_day,
+        GratitudeEntry.timestamp < end_of_day
     ).first_or_404()
 
     return jsonify({'message': 'entry retrieved', 'data': {
