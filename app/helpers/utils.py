@@ -9,6 +9,7 @@ from ..config import Config
 from ..models import User
 import datetime
 import pytz
+import json
 
 
 def format_timestamp(timestamp):
@@ -58,11 +59,13 @@ def get_public_key_from_apple(kid):
     if not key:
         raise Exception("No key found with matching kid")
 
-    return RSAAlgorithm.from_jwk(key)
+    key_json = json.dumps(key)
+    return RSAAlgorithm.from_jwk(key_json)
 
 
 def verify_apple_token(identity_token):
     header = get_unverified_header(identity_token)
+    print(header["kid"])
     public_key = get_public_key_from_apple(header["kid"])
 
     return jwt.decode(

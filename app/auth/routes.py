@@ -26,10 +26,10 @@ def applelogin():
     if not identity_token or not apple_user_id:
         return jsonify({'message': 'Missing Apple identity token or user ID'}), 400
 
-    # try:
-    payload = verify_apple_token(identity_token)
-    # except Exception as e:
-    #     return jsonify({'message': 'Invalid identity token', 'error': str(e)}), 401
+    try:
+        payload = verify_apple_token(identity_token)
+    except Exception as e:
+        return jsonify({'message': 'Invalid identity token', 'error': str(e)}), 401
 
     token_user_id = payload.get("sub")
 
