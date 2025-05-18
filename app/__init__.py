@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_limiter.errors import RateLimitExceeded
 
 db = SQLAlchemy()
-
 
 limiter = Limiter(
     key_func=lambda: getattr(request, 'user_id', get_remote_address()),
@@ -24,6 +24,14 @@ def create_app():
     db.init_app(app)
     limiter.init_app(app)
 
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit_exceeded(e):
+        return jsonify({
+            'message': 'Rate limit exceeded',
+            'error': 'too_many_requests',
+            'status_code': 429
+        }), 429
+
     with app.app_context():
         from .auth.routes import auth_bp
         from .entries.routes import entries_bp
@@ -39,7 +47,7 @@ def create_app():
         db.create_all()
 
         @app.route('/')
-        @limiter.exempt()
+        @limiter.exempt
         def index():
             return render_template('index.html', app_id=Config.APP_ID)
 
