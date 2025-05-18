@@ -1,8 +1,17 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 db = SQLAlchemy()
+
+
+limiter = Limiter(
+    key_func=lambda: getattr(request, 'user_id', get_remote_address()),
+    default_limits=["10 per minute"],
+    headers_enabled=True
+)
 
 
 def create_app():
@@ -13,6 +22,7 @@ def create_app():
 
     CORS(app)
     db.init_app(app)
+    limiter.init_app(app)
 
     with app.app_context():
         from .auth.routes import auth_bp
