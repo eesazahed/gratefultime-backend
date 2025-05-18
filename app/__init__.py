@@ -39,6 +39,7 @@ def create_app():
         db.create_all()
 
         @app.route('/')
+        @limiter.exempt()
         def index():
             return render_template('index.html', app_id=Config.APP_ID)
 
