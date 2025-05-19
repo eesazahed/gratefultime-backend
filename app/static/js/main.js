@@ -1,8 +1,6 @@
-const el = (id) => document.getElementById(id);
-
-const container = el("scrollContainer");
-const leftButton = el("leftButton");
-const rightButton = el("rightButton");
+const container = document.getElementById("scrollContainer");
+const leftButton = document.getElementById("leftButton");
+const rightButton = document.getElementById("rightButton");
 
 const updateButtonState = () => {
   const isOverflowing = container.scrollWidth > container.clientWidth;
