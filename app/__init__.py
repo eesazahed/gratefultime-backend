@@ -46,6 +46,11 @@ def create_app():
         from .models import User, GratitudeEntry
         db.create_all()
 
+        @app.route('/api/v1/')
+        @limiter.exempt
+        def server():
+            return jsonify({'message': 'Server running'})
+
         @app.route('/')
         @limiter.exempt
         def index():
