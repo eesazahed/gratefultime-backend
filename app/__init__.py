@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -45,6 +45,10 @@ def create_app():
 
         from .models import User, GratitudeEntry
         db.create_all()
+
+        @app.route("/robots.txt")
+        def robots():
+            return send_from_directory(app.static_folder, "robots.txt")
 
         @app.route('/api/v1/')
         @limiter.exempt
