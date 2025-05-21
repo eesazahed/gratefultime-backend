@@ -86,10 +86,22 @@ def add_entry():
 @entries_bp.route('/days', methods=['GET'])
 @require_auth
 def get_entry_days():
-    entries = db.session.query(GratitudeEntry.timestamp).filter_by(
-        user_id=request.user_id).distinct().all()
+    entries = db.session.query(
+        GratitudeEntry.id,
+        GratitudeEntry.timestamp
+    ).filter_by(
+        user_id=request.user_id
+    ).distinct().all()
 
-    return jsonify({'message': 'Entry days retrieved', 'data': [format_timestamp(e[0]) for e in entries]})
+    return jsonify({
+        'message': 'Entry days retrieved',
+        'data': [
+            {
+                'id': entry.id,
+                'timestamp': format_timestamp(entry.timestamp)
+            } for entry in entries
+        ]
+    })
 
 
 # COUNT THE DAYS A USER HAS POSTED THIS MONTH
@@ -134,38 +146,6 @@ def user_month_days():
         days.add(local_date)
 
     return jsonify({'message': 'Count of days with entries this month', 'days_count': len(days)})
-
-
-# GET A SPECIFIC DAY
-
-@entries_bp.route('/day', methods=['GET'])
-@require_auth
-def get_entry_by_day():
-    date_str = request.args.get('date')
-    if not date_str:
-        return jsonify({'message': 'Date is required'}), 400
-
-    yyyy_mm_dd = datetime.fromisoformat(date_str).date()
-
-    start_of_day = datetime.combine(
-        yyyy_mm_dd, datetime.min.time()).replace(tzinfo=pytz.utc)
-    end_of_day = start_of_day + timedelta(days=1)
-
-    entry = GratitudeEntry.query.filter(
-        GratitudeEntry.user_id == request.user_id,
-        GratitudeEntry.timestamp >= start_of_day,
-        GratitudeEntry.timestamp < end_of_day
-    ).first_or_404()
-
-    return jsonify({'message': 'entry retrieved', 'data': {
-        'id': entry.id,
-        'entry1': entry.entry1,
-        'entry2': entry.entry2,
-        'entry3': entry.entry3,
-        'user_prompt': entry.user_prompt,
-        'user_prompt_response': entry.user_prompt_response,
-        'timestamp': format_timestamp(entry.timestamp)
-    }})
 
 
 # GET A SPECIFIC ENTRY BY ID

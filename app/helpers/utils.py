@@ -69,11 +69,13 @@ def verify_apple_token(identity_token):
     header = get_unverified_header(identity_token)
     public_key = get_public_key_from_apple(header["kid"])
 
+    audience = "host.exp.Exponent" if Config.DEV_MODE else Config.APPLE_AUDIENCE
+
     return jwt.decode(
         identity_token,
         public_key,
         algorithms=["RS256"],
-        audience=Config.APPLE_AUDIENCE,
+        audience=audience,
         issuer=Config.APPLE_ISSUER,
         leeway=datetime.timedelta(seconds=300)
     )
