@@ -47,6 +47,7 @@ def create_app():
         db.create_all()
 
         @app.route("/robots.txt")
+        @limiter.exempt
         def robots():
             return send_from_directory(app.static_folder, "robots.txt")
 
