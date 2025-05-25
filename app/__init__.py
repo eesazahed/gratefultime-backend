@@ -54,7 +54,7 @@ def create_app():
         @app.route('/api/v1/')
         @limiter.exempt
         def server():
-            return jsonify({'message': 'Server running'})
+            return jsonify({'message': 'server running'})
 
         @app.route('/')
         @limiter.exempt
