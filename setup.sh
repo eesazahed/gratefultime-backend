@@ -15,4 +15,4 @@ git pull
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-gunicorn -b ":$PORT" app:app
+gunicorn -b ":$PORT" wsgi:app
