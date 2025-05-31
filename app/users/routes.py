@@ -62,7 +62,6 @@ def update_user_settings():
     if 'user_timezone' in data:
         try:
             user.user_timezone = data['user_timezone']
-            print(user.user_timezone)
         except:
             return jsonify({'message': 'Could not update time zone', 'errorCode': 'timezone'}), 400
 
