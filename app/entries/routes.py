@@ -3,9 +3,23 @@ from datetime import datetime, timezone, timedelta
 from .. import db
 from ..models import GratitudeEntry, User
 from ..helpers.utils import require_auth, format_timestamp, convert_utc_to_local
+from ..config import Config
 import pytz
+from cryptography.fernet import Fernet
 
 entries_bp = Blueprint('entries', __name__)
+
+
+def get_cipher():
+    return Fernet(Config.ENCRYPTION_KEY)
+
+
+def encrypt(text):
+    return get_cipher().encrypt(text.encode()).decode()
+
+
+def decrypt(token):
+    return get_cipher().decrypt(token.encode()).decode()
 
 
 # GETS ENTRIES WITH PAGINATION
@@ -26,11 +40,11 @@ def get_entries():
         'message': 'Entries retrieved successfully',
         'data': [{
             'id': e.id,
-            'entry1': e.entry1,
-            'entry2': e.entry2,
-            'entry3': e.entry3,
-            'user_prompt': e.user_prompt,
-            'user_prompt_response': e.user_prompt_response,
+            'entry1': decrypt(e.entry1),
+            'entry2': decrypt(e.entry2),
+            'entry3': decrypt(e.entry3),
+            'user_prompt': decrypt(e.user_prompt) if e.user_prompt else None,
+            'user_prompt_response': decrypt(e.user_prompt_response),
             'timestamp': format_timestamp(e.timestamp)
         } for e in entries],
         'nextOffset': next_offset
@@ -67,11 +81,12 @@ def add_entry():
 
     entry = GratitudeEntry(
         user_id=request.user_id,
-        entry1=data['entry1'],
-        entry2=data['entry2'],
-        entry3=data['entry3'],
-        user_prompt=data.get('user_prompt'),
-        user_prompt_response=data['user_prompt_response']
+        entry1=encrypt(data['entry1']),
+        entry2=encrypt(data['entry2']),
+        entry3=encrypt(data['entry3']),
+        user_prompt=encrypt(data['user_prompt']) if data.get(
+            'user_prompt') else None,
+        user_prompt_response=encrypt(data['user_prompt_response'])
     )
     db.session.add(entry)
     db.session.commit()
@@ -157,11 +172,11 @@ def get_entry(id):
         return jsonify({'message': 'Unauthorized access'}), 403
     return jsonify({'message': 'Entry retrieved', 'data': {
         'id': entry.id,
-        'entry1': entry.entry1,
-        'entry2': entry.entry2,
-        'entry3': entry.entry3,
-        'user_prompt': entry.user_prompt,
-        'user_prompt_response': entry.user_prompt_response,
+        'entry1': decrypt(entry.entry1),
+        'entry2': decrypt(entry.entry2),
+        'entry3': decrypt(entry.entry3),
+        'user_prompt': decrypt(entry.user_prompt) if entry.user_prompt else None,
+        'user_prompt_response': decrypt(entry.user_prompt_response),
         'timestamp': format_timestamp(entry.timestamp)
     }})
 
