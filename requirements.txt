@@ -11,5 +11,6 @@ setuptools>=65.5.0
 wheel>=0.38.4
 cryptography
 urllib3>=1.26.17,<2.0.0
+cryptography>=42.0.0,<43.0.0
 gunicorn
 
