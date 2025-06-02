@@ -5,8 +5,17 @@ from ..models import GratitudeEntry, User
 from ..helpers.utils import require_auth, convert_utc_to_local
 import requests
 from ..config import Config
+from cryptography.fernet import Fernet
 
 ai_bp = Blueprint('ai', __name__)
+
+
+def get_cipher():
+    return Fernet(Config.ENCRYPTION_KEY)
+
+
+def decrypt(token: str) -> str:
+    return get_cipher().decrypt(token.encode()).decode()
 
 
 @ai_bp.route('/monthlysummary', methods=['GET'])
@@ -52,13 +61,21 @@ def summarize_month_entries():
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
 
+        try:
+            entry1 = decrypt(e.entry1)
+            entry2 = decrypt(e.entry2)
+            entry3 = decrypt(e.entry3)
+            user_prompt_response = decrypt(e.user_prompt_response)
+        except Exception as decrypt_error:
+            return jsonify({'error': 'Decryption failed', 'details': str(decrypt_error)}), 500
+
         combined_text += (
             f"Date: {date_local}\n"
-            f"  Gratitude 1: {e.entry1}\n"
-            f"  Gratitude 2: {e.entry2}\n"
-            f"  Gratitude 3: {e.entry3}\n"
+            f"  Gratitude 1: {entry1}\n"
+            f"  Gratitude 2: {entry2}\n"
+            f"  Gratitude 3: {entry3}\n"
             f"  User Prompt: {e.user_prompt}\n"
-            f"  User Response: {e.user_prompt_response}\n\n"
+            f"  User Response: {user_prompt_response}\n\n"
         )
 
     prompt = (
