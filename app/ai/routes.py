@@ -14,7 +14,7 @@ def get_cipher():
     return Fernet(Config.ENCRYPTION_KEY)
 
 
-def decrypt(token: str) -> str:
+def decrypt(token):
     return get_cipher().decrypt(token.encode()).decode()
 
 
