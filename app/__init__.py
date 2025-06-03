@@ -3,8 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_limiter.errors import RateLimitExceeded
 from .helpers.utils import create_limiter
-
-db = SQLAlchemy()
+from .extensions import db
 
 
 def create_app():
