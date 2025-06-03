@@ -22,7 +22,7 @@ def create_app():
         strategy="fixed-window",
         headers_enabled=True,
         default_limits=["10 per minute"],
-        app=None
+        app=app
     )
 
     redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
