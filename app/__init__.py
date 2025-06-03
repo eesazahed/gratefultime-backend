@@ -41,17 +41,12 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Configure limiter storage before init_app
     configure_limiter_storage(app)
-
-    # Bind limiter to app now
     limiter.init_app(app)
 
-    # Continue with app setup
     CORS(app)
     db.init_app(app)
 
-    # Error handler
     @app.errorhandler(RateLimitExceeded)
     def handle_rate_limit_exceeded(e):
         return jsonify({
@@ -84,8 +79,8 @@ def create_app():
         def server():
             return jsonify({'message': 'server running'})
 
-        @app.route('/api/v1/limiter')
-        @limiter.exempt
+        @app.route('/api/v1/limiterdata')
+        @limiterdata.exempt
         def limiter():
             storage = limiter.storage
             storage_type = type(storage).__name__ if storage else "None"
