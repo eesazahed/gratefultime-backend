@@ -25,8 +25,6 @@ limiter = Limiter(
 def configure_limiter_storage(app):
     redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
 
-    print("connecting to redis")
-
     try:
         pool = redis.connection.BlockingConnectionPool.from_url(
             redis_url, socket_connect_timeout=5)
@@ -40,8 +38,6 @@ def configure_limiter_storage(app):
 
 
 def create_app():
-    print('creating app')
-
     from .config import Config
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -89,7 +85,7 @@ def create_app():
         def limiterdata():
             storage = limiter.storage
             storage_type = type(storage).__name__ if storage else "None"
-            return jsonify({'storage_type': storage_type})
+            return jsonify({'storage_type': storage_type, "url": f"redis://:password@127.0.0.1:{app.config['REDIS_PORT']}"})
 
         @app.route('/')
         @limiter.exempt
