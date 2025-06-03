@@ -9,20 +9,22 @@ import redis
 db = SQLAlchemy()
 
 
-def key_func():
-    return getattr(request, 'user_id', get_remote_address())
+def create_app():
+    from .config import Config
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
+    def key_func():
+        return getattr(request, 'user_id', get_remote_address())
 
-limiter = Limiter(
-    key_func=key_func,
-    strategy="fixed-window",
-    headers_enabled=True,
-    default_limits=["10 per minute"],
-    app=None
-)
+    limiter = Limiter(
+        key_func=key_func,
+        strategy="fixed-window",
+        headers_enabled=True,
+        default_limits=["10 per minute"],
+        app=None
+    )
 
-
-def configure_limiter_storage(app):
     redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
 
     try:
@@ -36,13 +38,6 @@ def configure_limiter_storage(app):
         limiter.storage_uri = None
         limiter.storage_options = None
 
-
-def create_app():
-    from .config import Config
-    app = Flask(__name__)
-    app.config.from_object(Config)
-
-    configure_limiter_storage(app)
     limiter.init_app(app)
 
     CORS(app)
@@ -61,6 +56,8 @@ def create_app():
         from .entries.routes import entries_bp
         from .users.routes import users_bp
         from .ai.routes import ai_bp
+
+        limiter.exempt(auth_bp)
 
         app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
         app.register_blueprint(entries_bp, url_prefix='/api/v1/entries')
@@ -85,7 +82,7 @@ def create_app():
         def limiterdata():
             storage = limiter.storage
             storage_type = type(storage).__name__ if storage else "None"
-            return jsonify({'storage_type': storage_type, "url": f"redis://:password@127.0.0.1:{app.config['REDIS_PORT']}"})
+            return jsonify({'storage_type': storage_type})
 
         @app.route('/')
         @limiter.exempt

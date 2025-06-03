@@ -3,13 +3,11 @@ from ..models import User
 from .. import db
 from ..helpers.utils import encode_token, is_email_taken, verify_apple_token
 from ..config import Config
-from .. import limiter
 
 auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/applelogin', methods=['POST'])
-@limiter.exempt
 def applelogin():
     data = request.get_json()
     identity_token = data.get("identityToken")
