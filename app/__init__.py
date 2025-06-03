@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from flask_limiter.errors import RateLimitExceeded
+from werkzeug.middleware.proxy_fix import ProxyFix
 import redis
 
 db = SQLAlchemy()
@@ -14,7 +14,12 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
     redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
+
+    def key_func():
+        return getattr(request, 'user_id', request.remote_addr)
 
     try:
         pool = redis.connection.BlockingConnectionPool.from_url(
@@ -23,7 +28,7 @@ def create_app():
         client.ping()
 
         limiter = Limiter(
-            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
+            key_func=key_func,
             strategy="fixed-window",
             headers_enabled=True,
             default_limits=["10 per minute"],
@@ -34,7 +39,7 @@ def create_app():
 
     except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
         limiter = Limiter(
-            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
+            key_func=key_func,
             strategy="fixed-window",
             headers_enabled=True,
             default_limits=["10 per minute"],
