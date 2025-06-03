@@ -8,13 +8,6 @@ import redis
 
 db = SQLAlchemy()
 
-limiter = Limiter(
-    key_func=lambda: getattr(request, 'user_id', get_remote_address()),
-    strategy="fixed-window",
-    headers_enabled=True,
-    default_limits=["10 per minute"],
-)
-
 
 def create_app():
     from .config import Config
@@ -22,11 +15,19 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:35749"
+    redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
     pool = redis.connection.BlockingConnectionPool.from_url(
         redis_url, socket_connect_timeout=30)
-    limiter.init_app(app, storage_uri=redis_url,
-                     storage_options={"connection_pool": pool})
+
+    limiter = Limiter(
+        key_func=lambda: getattr(request, 'user_id', get_remote_address()),
+        app=app,
+        storage_uri=redis_url,
+        storage_options={"connection_pool": pool},
+        strategy="fixed-window",
+        headers_enabled=True,
+        default_limits=["10 per minute"],
+    )
 
     CORS(app)
     db.init_app(app)
