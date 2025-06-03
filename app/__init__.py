@@ -16,7 +16,7 @@ def create_app():
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 
-    redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
+    redis_url = app.config["REDIS_URL"]
 
     def key_func():
         return getattr(request, 'user_id', request.remote_addr)
