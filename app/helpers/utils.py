@@ -10,9 +10,6 @@ from ..models import User
 import datetime
 import pytz
 import json
-import redis
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 
 def format_timestamp(timestamp):
@@ -92,30 +89,3 @@ def convert_utc_to_local(utc_dt, timezone_str):
     utc_dt = utc_dt.replace(tzinfo=pytz.utc)
     local_dt = utc_dt.astimezone(local_tz)
     return local_dt
-
-
-def create_limiter(app):
-    redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
-    try:
-        pool = redis.connection.BlockingConnectionPool.from_url(
-            redis_url, socket_connect_timeout=5)
-        client = redis.Redis(connection_pool=pool)
-        client.ping()
-        limiter = Limiter(
-            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
-            app=app,
-            storage_uri=redis_url,
-            storage_options={"connection_pool": pool},
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-        )
-    except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
-        limiter = Limiter(
-            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
-            app=app,
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-        )
-    return limiter
