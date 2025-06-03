@@ -24,6 +24,9 @@ limiter = Limiter(
 
 def configure_limiter_storage(app):
     redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
+
+    print("connecting to redis")
+
     try:
         pool = redis.connection.BlockingConnectionPool.from_url(
             redis_url, socket_connect_timeout=5)
