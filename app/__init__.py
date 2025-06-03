@@ -1,10 +1,8 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from flask_limiter.errors import RateLimitExceeded
-import redis
+from helpers.utils import create_limiter
 
 db = SQLAlchemy()
 
@@ -15,19 +13,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
-    pool = redis.connection.BlockingConnectionPool.from_url(
-        redis_url, socket_connect_timeout=30)
-
-    limiter = Limiter(
-        key_func=lambda: getattr(request, 'user_id', get_remote_address()),
-        app=app,
-        storage_uri=redis_url,
-        storage_options={"connection_pool": pool},
-        strategy="fixed-window",
-        headers_enabled=True,
-        default_limits=["10 per minute"],
-    )
+    limiter = create_limiter(app)
 
     CORS(app)
     db.init_app(app)
