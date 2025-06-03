@@ -21,7 +21,7 @@ def create_app():
             redis_url, socket_connect_timeout=5)
         client = redis.Redis(connection_pool=pool)
         client.ping()
-        print(client)
+
         limiter = Limiter(
             key_func=lambda: getattr(request, 'user_id', get_remote_address()),
             strategy="fixed-window",
