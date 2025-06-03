@@ -80,8 +80,8 @@ def create_app():
             return jsonify({'message': 'server running'})
 
         @app.route('/api/v1/limiterdata')
-        @limiterdata.exempt
-        def limiter():
+        @limiter.exempt
+        def limiterdata():
             storage = limiter.storage
             storage_type = type(storage).__name__ if storage else "None"
             return jsonify({'storage_type': storage_type})
