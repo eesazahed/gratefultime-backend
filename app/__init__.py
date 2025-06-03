@@ -14,17 +14,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    def key_func():
-        return getattr(request, 'user_id', get_remote_address())
-
-    limiter = Limiter(
-        key_func=key_func,
-        strategy="fixed-window",
-        headers_enabled=True,
-        default_limits=["10 per minute"],
-        app=app
-    )
-
     redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
 
     try:
@@ -32,13 +21,25 @@ def create_app():
             redis_url, socket_connect_timeout=5)
         client = redis.Redis(connection_pool=pool)
         client.ping()
-        limiter.storage_uri = redis_url
-        limiter.storage_options = {"connection_pool": pool}
-    except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
-        limiter.storage_uri = None
-        limiter.storage_options = None
+        print(client)
+        limiter = Limiter(
+            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
+            strategy="fixed-window",
+            headers_enabled=True,
+            default_limits=["10 per minute"],
+            storage_uri=redis_url,
+            storage_options={"connection_pool": pool},
+            app=app
+        )
 
-    limiter.init_app(app)
+    except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
+        limiter = Limiter(
+            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
+            strategy="fixed-window",
+            headers_enabled=True,
+            default_limits=["10 per minute"],
+            app=app
+        )
 
     CORS(app)
     db.init_app(app)
