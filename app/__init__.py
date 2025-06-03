@@ -2,7 +2,7 @@ from flask import Flask, render_template, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_limiter.errors import RateLimitExceeded
-from helpers.utils import create_limiter
+from .helpers.utils import create_limiter
 
 db = SQLAlchemy()
 
