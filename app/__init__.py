@@ -40,6 +40,8 @@ def configure_limiter_storage(app):
 
 
 def create_app():
+    print('creating app')
+
     from .config import Config
     app = Flask(__name__)
     app.config.from_object(Config)
