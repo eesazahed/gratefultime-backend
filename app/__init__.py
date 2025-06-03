@@ -9,44 +9,49 @@ import redis
 db = SQLAlchemy()
 
 
-def create_limiter(app):
+def key_func():
+    return getattr(request, 'user_id', get_remote_address())
+
+
+limiter = Limiter(
+    key_func=key_func,
+    strategy="fixed-window",
+    headers_enabled=True,
+    default_limits=["10 per minute"],
+    app=None
+)
+
+
+def configure_limiter_storage(app):
     redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
     try:
         pool = redis.connection.BlockingConnectionPool.from_url(
             redis_url, socket_connect_timeout=5)
         client = redis.Redis(connection_pool=pool)
         client.ping()
-        limiter = Limiter(
-            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
-            app=app,
-            storage_uri=redis_url,
-            storage_options={"connection_pool": pool},
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-        )
+        limiter.storage_uri = redis_url
+        limiter.storage_options = {"connection_pool": pool}
     except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
-        limiter = Limiter(
-            key_func=lambda: getattr(request, 'user_id', get_remote_address()),
-            app=app,
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-        )
-    return limiter
+        limiter.storage_uri = None
+        limiter.storage_options = None
 
 
 def create_app():
     from .config import Config
-
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    limiter = create_limiter(app)
+    # Configure limiter storage before init_app
+    configure_limiter_storage(app)
 
+    # Bind limiter to app now
+    limiter.init_app(app)
+
+    # Continue with app setup
     CORS(app)
     db.init_app(app)
 
+    # Error handler
     @app.errorhandler(RateLimitExceeded)
     def handle_rate_limit_exceeded(e):
         return jsonify({
