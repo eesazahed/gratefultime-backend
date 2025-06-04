@@ -47,7 +47,7 @@ def create_app():
             redis_url, socket_connect_timeout=5)
         client = redis.Redis(connection_pool=pool)
         client.ping()
-        limiter_options["storage_uri"] = "redis+"+redis_url
+        limiter_options["storage_uri"] = f"redis+{redis_url}"
         limiter_options["storage_options"] = {"connection_pool": pool}
     except Exception as e:
         pass
