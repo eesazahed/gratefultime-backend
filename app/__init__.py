@@ -42,7 +42,7 @@ def create_app():
     }
 
     # try:
-    redis_url = f"redis+unix://:{Config.REDIS_PASSWORD}/tmp/redis.sock"
+    redis_url = f"unix://:{Config.REDIS_PASSWORD}@/tmp/redis.sock"
     # redis_url = f"redis://:{Config.REDIS_PASSWORD}@127.0.0.1:{Config.REDIS_PORT}"
     pool = redis.connection.BlockingConnectionPool.from_url(
         redis_url, socket_connect_timeout=5)
