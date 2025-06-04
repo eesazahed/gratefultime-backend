@@ -45,9 +45,14 @@ def create_app():
         redis_url = Config.REDIS_URL
         pool = redis.connection.BlockingConnectionPool.from_url(
             redis_url, socket_connect_timeout=5)
+
         client = redis.Redis(connection_pool=pool)
         client.ping()
-        limiter_options["storage_uri"] = f"redis+{redis_url}"
+
+        if redis_url.startswith("unix://"):
+            limiter_options["storage_uri"] = f"redis+{redis_url}"
+        else:
+            limiter_options["storage_uri"] = redis_url
         limiter_options["storage_options"] = {"connection_pool": pool}
     except Exception as e:
         pass

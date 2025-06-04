@@ -11,7 +11,7 @@ class Config:
     APP_ID = "6746601767"
     SECRET_KEY = os.environ['SECRET_KEY']
     ENCRYPTION_KEY = os.environ['ENCRYPTION_KEY']
+    REDIS_URL = os.environ['REDIS_URL']
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    REDIS_URL = os.environ['REDIS_URL']
     DEV_MODE = os.getenv('GRATEFULTIME_DEV_MODE', 'false').lower() == 'true'
