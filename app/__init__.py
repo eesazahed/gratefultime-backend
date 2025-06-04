@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_limiter.errors import RateLimitExceeded
+from werkzeug.middleware.proxy_fix import ProxyFix
 import redis
 import jwt
 
@@ -15,6 +16,7 @@ def create_app():
 
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 
     CORS(app)
     db.init_app(app)
