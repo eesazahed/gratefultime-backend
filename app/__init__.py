@@ -4,8 +4,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.errors import RateLimitExceeded
 from werkzeug.middleware.proxy_fix import ProxyFix
-# import redis
-from redis import BlockingConnectionPool
+from redis import Redis, BlockingConnectionPool
 
 db = SQLAlchemy()
 
@@ -17,37 +16,31 @@ def create_app():
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 
-    redis_url = app.config["REDIS_URL"]
-
     def key_func():
         return getattr(request, 'user_id', request.remote_addr)
 
-    # try:
     pool = BlockingConnectionPool(
-        unix_socket_path="/tmp/redis.sock", password=app.config["REDIS_PASSWORD"])
-    # pool = redis.connection.BlockingConnectionPool.from_url(
-    #     redis_url, socket_connect_timeout=5)
-    # client = redis.Redis(connection_pool=pool)
-    # client.ping()
+        unix_socket_path="/tmp/redis.sock",
+        password=app.config["REDIS_PASSWORD"]
+    )
+
+    try:
+        Redis(connection_pool=pool).ping()
+        storage_uri = "redis://"
+        storage_options = {"connection_pool": pool}
+    except:
+        storage_uri = None
+        storage_options = None
 
     limiter = Limiter(
         key_func=key_func,
         strategy="fixed-window",
         headers_enabled=True,
         default_limits=["10 per minute"],
-        storage_uri="redis://",
-        storage_options={"connection_pool": pool},
+        storage_uri=storage_uri,
+        storage_options=storage_options,
         app=app
     )
-
-    # except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
-    #     limiter = Limiter(
-    #         key_func=key_func,
-    #         strategy="fixed-window",
-    #         headers_enabled=True,
-    #         default_limits=["10 per minute"],
-    #         app=app
-    #     )
 
     CORS(app)
     db.init_app(app)
