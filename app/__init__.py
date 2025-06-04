@@ -24,10 +24,12 @@ def create_app():
         password=app.config["REDIS_PASSWORD"]
     )
 
+    storage_uri = "redis://"
+    storage_options = {"connection_pool": pool}
+
     try:
-        Redis(connection_pool=pool).ping()
-        storage_uri = "redis://"
-        storage_options = {"connection_pool": pool}
+        redis = Redis(connection_pool=pool)
+        redis.ping()
     except:
         storage_uri = None
         storage_options = None
