@@ -21,8 +21,6 @@ def create_app():
     CORS(app)
     db.init_app(app)
 
-    redis_url = f"redis://:{Config.REDIS_PASSWORD}@127.0.0.1:{Config.REDIS_PORT}"
-
     def get_user_or_ip():
         token = request.headers.get('Authorization', None)
         if token and token.startswith("Bearer "):
@@ -44,6 +42,7 @@ def create_app():
     }
 
     try:
+        redis_url = f"redis://:{Config.REDIS_PASSWORD}@127.0.0.1:{Config.REDIS_PORT}"
         pool = redis.connection.BlockingConnectionPool.from_url(
             redis_url, socket_connect_timeout=5)
         client = redis.Redis(connection_pool=pool)
@@ -69,6 +68,8 @@ def create_app():
         from .entries.routes import entries_bp
         from .users.routes import users_bp
         from .ai.routes import ai_bp
+
+        limiter.exempt(auth_bp)
 
         app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
         app.register_blueprint(entries_bp, url_prefix='/api/v1/entries')
@@ -101,5 +102,3 @@ def create_app():
             return render_template('index.html', app_id=Config.APP_ID)
 
     return app
-
-# removed redis and going back to normal

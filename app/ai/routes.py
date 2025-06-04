@@ -79,8 +79,14 @@ def summarize_month_entries():
         )
 
     prompt = (
-        "You are a clear and thoughtful AI. Read the following gratitude journal entries and write a short, powerful summary. "
-        "Use simple language. Be direct and meaningful. Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
+        f"{combined_text}\n\n"
+        "If any part of the above text contains references to real-world illegal activity, violence, hate speech, or harm "
+        "(e.g., 'I killed someone,' 'I robbed a bank'), immediately halt processing. Do not continue with the task. "
+        "If such actions are clearly situated within a fictional or game-based context "
+        "(e.g., 'I got a kill in Fortnite,' 'I robbed a bank in GTA'), treat them as valid and proceed. "
+        "Otherwise, return the following message: 'A response could not be generated due to one or more data entries violating the AI's guidelines.'\n\n"
+        "Next, understand that you are a clear and thoughtful AI assistant that summarizes and analyzes a user's gratitude journal. Read the following gratitude journal entries and write a short, powerful summary. "
+        "Use simple language and concise phrases. Be direct and meaningful. Use second-person pronouns, as if you are talking to the user face-to-face. Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
         "Help the user see their growth and feel understood:\n\n"
         f"{combined_text}"
     )
