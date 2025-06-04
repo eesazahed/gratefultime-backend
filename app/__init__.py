@@ -50,7 +50,8 @@ def create_app():
         client.ping()
         limiter_options["storage_uri"] = redis_url
         limiter_options["storage_options"] = {"connection_pool": pool}
-    except:
+    except Exception as e:
+        print('oh no: ', e)
         pass
 
     limiter = Limiter(**limiter_options)
