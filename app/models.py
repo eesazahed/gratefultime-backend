@@ -10,8 +10,10 @@ class User(db.Model):
     apple_user_id = db.Column(db.String(255), unique=True, nullable=True)
     preferred_unlock_time = db.Column(db.Integer, default=20)
     account_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime(timezone=True),
-                           default=datetime.now(timezone.utc))
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class GratitudeEntry(db.Model):
@@ -22,5 +24,7 @@ class GratitudeEntry(db.Model):
     entry3 = db.Column(db.String(255), nullable=False)
     user_prompt = db.Column(db.String(255), nullable=False)
     user_prompt_response = db.Column(db.String(255), nullable=False)
-    timestamp = db.Column(db.DateTime(timezone=True),
-                          default=datetime.now(timezone.utc))
+    timestamp = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
