@@ -4,7 +4,8 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.errors import RateLimitExceeded
 from werkzeug.middleware.proxy_fix import ProxyFix
-import redis
+# import redis
+from redis import BlockingConnectionPool
 
 db = SQLAlchemy()
 
@@ -21,30 +22,32 @@ def create_app():
     def key_func():
         return getattr(request, 'user_id', request.remote_addr)
 
-    try:
-        pool = redis.connection.BlockingConnectionPool.from_url(
-            redis_url, socket_connect_timeout=5)
-        client = redis.Redis(connection_pool=pool)
-        client.ping()
+    # try:
+    pool = BlockingConnectionPool(
+        unix_socket_path="/tmp/redis.sock", password=app.config["REDIS_PASSWORD"])
+    # pool = redis.connection.BlockingConnectionPool.from_url(
+    #     redis_url, socket_connect_timeout=5)
+    # client = redis.Redis(connection_pool=pool)
+    # client.ping()
 
-        limiter = Limiter(
-            key_func=key_func,
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-            storage_uri=redis_url,
-            storage_options={"connection_pool": pool},
-            app=app
-        )
+    limiter = Limiter(
+        key_func=key_func,
+        strategy="fixed-window",
+        headers_enabled=True,
+        default_limits=["10 per minute"],
+        storage_uri="redis://",
+        storage_options={"connection_pool": pool},
+        app=app
+    )
 
-    except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
-        limiter = Limiter(
-            key_func=key_func,
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-            app=app
-        )
+    # except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
+    #     limiter = Limiter(
+    #         key_func=key_func,
+    #         strategy="fixed-window",
+    #         headers_enabled=True,
+    #         default_limits=["10 per minute"],
+    #         app=app
+    #     )
 
     CORS(app)
     db.init_app(app)
