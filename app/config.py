@@ -14,4 +14,4 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     REDIS_URL = os.environ['REDIS_URL']
-    DEV_MODE = False
+    DEV_MODE = os.environ['DEV_MODE'].lower() == 'true'

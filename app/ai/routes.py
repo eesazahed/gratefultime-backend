@@ -70,7 +70,8 @@ def summarize_month_entries():
             return jsonify({'error': 'Decryption failed', 'details': str(decrypt_error)}), 500
 
         combined_text += (
-            f"Date: {date_local}\n"
+            f"  id: {e.id}\n"
+            f"  Date: {date_local}\n"
             f"  Gratitude 1: {entry1}\n"
             f"  Gratitude 2: {entry2}\n"
             f"  Gratitude 3: {entry3}\n"
@@ -78,15 +79,21 @@ def summarize_month_entries():
             f"  User Response: {user_prompt_response}\n\n"
         )
 
-    prompt = (
-        f"{combined_text}\n\n"
-        "If any part of the above text contains references to real-world illegal activity, violence, hate speech, or harm "
-        "(e.g., 'I killed someone,' 'I robbed a bank'), immediately halt processing. Do not continue with the task. "
+    system_prompt = (
+        "You are an AI assistant that summarizes and analyzes a user's gratitude journal.\n\n"
+        "If any part of the user's input contains references to real-world illegal activity, violence, hate speech, or harm "
+        "(e.g., 'I killed someone,' 'I robbed a bank'), you must immediately halt processing. Do not generate any summary.\n\n"
         "If such actions are clearly situated within a fictional or game-based context "
-        "(e.g., 'I got a kill in Fortnite,' 'I robbed a bank in GTA'), treat them as valid and proceed. "
-        "Otherwise, return the following message: 'A response could not be generated due to one or more data entries violating the AI's guidelines.'\n\n"
-        "Next, understand that you are a clear and thoughtful AI assistant that summarizes and analyzes a user's gratitude journal. Read the following gratitude journal entries and write a short, powerful summary. "
-        "Use simple language and concise phrases. Be direct and meaningful. Use second-person pronouns, as if you are talking to the user face-to-face. Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
+        "(e.g., 'I got a kill in Fortnite,' 'I robbed a bank in GTA'), treat them as valid and proceed.\n\n"
+        "If a violation is detected, identify the first offending entry, extract its 'id' field (e.g., 'id: 391'), and return exactly the following format:\n\n"
+        "'A response could not be generated due to one or more data entries violating the AI's guidelines. Offending entry id: [ID]. Please contact support@gratefultime.app for assistance.'\n\n"
+        "Do not explain the reason. Do not describe the entry. Do not confirm or deny the validity of other entries. Do not deviate from this wording."
+    )
+
+    user_prompt = (
+        "Read the following gratitude journal entries and write a short, powerful summary. "
+        "Use simple language and concise phrases. Be direct and meaningful. "
+        "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
         "Help the user see their growth and feel understood:\n\n"
         f"{combined_text}"
     )
@@ -97,8 +104,8 @@ def summarize_month_entries():
     }
     payload = {
         "messages": [
-            {"role": "system", "content": "You are an AI assistant that summarizes and analyzes a user's gratitude journal."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
         ]
     }
 
