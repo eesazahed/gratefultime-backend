@@ -4,7 +4,8 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.errors import RateLimitExceeded
 from werkzeug.middleware.proxy_fix import ProxyFix
-from redis import BlockingConnectionPool
+import redis
+
 
 db = SQLAlchemy()
 
@@ -19,12 +20,15 @@ def create_app():
     def key_func():
         return getattr(request, 'user_id', request.remote_addr)
 
-    try:
-        pool = BlockingConnectionPool(
-            unix_socket_path="/tmp/redis.sock",
-            password=app.config["REDIS_PASSWORD"])
+    redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
 
-        storage_uri = "redis://"
+    try:
+        pool = redis.connection.BlockingConnectionPool.from_url(
+            redis_url, socket_connect_timeout=5)
+        client = redis.Redis(connection_pool=pool)
+        client.ping()
+
+        storage_uri = redis_url
         storage_options = {"connection_pool": pool}
     except:
         storage_uri = None

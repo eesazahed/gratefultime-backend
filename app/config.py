@@ -13,5 +13,6 @@ class Config:
     ENCRYPTION_KEY = os.environ['ENCRYPTION_KEY']
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     REDIS_PASSWORD = os.environ['REDIS_PASSWORD']
+    REDIS_PORT = os.environ['REDIS_PORT']
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DEV_MODE = False
