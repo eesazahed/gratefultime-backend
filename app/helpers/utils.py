@@ -1,7 +1,6 @@
 import jwt
 import requests
 from flask import request, jsonify
-from flask_limiter.util import get_remote_address
 from functools import wraps
 from jwt.algorithms import RSAAlgorithm
 from jwt import get_unverified_header
@@ -32,16 +31,6 @@ def decode_token(token):
 
 def is_email_taken(email):
     return User.query.filter(func.lower(User.email) == email.lower()).first()
-
-
-def get_user_or_ip():
-    token = request.headers.get('Authorization', None)
-    if token and token.startswith("Bearer "):
-        token = token.split(" ")[1]
-        user_id = decode_token(token)
-        if user_id:
-            return user_id
-    return get_remote_address()
 
 
 def require_auth(f):

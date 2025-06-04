@@ -6,6 +6,7 @@ from flask_limiter.util import get_remote_address
 from flask_limiter.errors import RateLimitExceeded
 from .helpers.utils import get_user_or_ip
 import redis
+import jwt
 
 db = SQLAlchemy()
 
@@ -19,32 +20,39 @@ def create_app():
     CORS(app)
     db.init_app(app)
 
-    redis_url = f"redis://:{app.config['REDIS_PASSWORD']}@127.0.0.1:{app.config['REDIS_PORT']}"
+    redis_url = f"redis://:{Config.REDIS_PASSWORD}@127.0.0.1:{Config.REDIS_PORT}"
+
+    def get_user_or_ip():
+        token = request.headers.get('Authorization', None)
+        if token and token.startswith("Bearer "):
+            token = token.split(" ")[1]
+            try:
+                user_id = jwt.decode(token, Config.SECRET_KEY, algorithms=[
+                                     'HS256'])['user_id']
+                return user_id
+            except:
+                pass
+        return get_remote_address()
+
+    limiter_options = {
+        "key_func": get_user_or_ip,
+        "strategy": "fixed-window",
+        "headers_enabled": True,
+        "default_limits": ["10 per minute"],
+        "app": app
+    }
 
     try:
         pool = redis.connection.BlockingConnectionPool.from_url(
             redis_url, socket_connect_timeout=5)
         client = redis.Redis(connection_pool=pool)
         client.ping()
-
-        limiter = Limiter(
-            key_func=get_user_or_ip,
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-            storage_uri=redis_url,
-            storage_options={"connection_pool": pool},
-            app=app
-        )
+        limiter_options["storage_uri"] = redis_url
+        limiter_options["storage_options"] = {"connection_pool": pool}
     except:
-        limiter = Limiter(
-            key_func=get_user_or_ip,
-            strategy="fixed-window",
-            headers_enabled=True,
-            default_limits=["10 per minute"],
-            app=app
-        )
+        pass
 
+    limiter = Limiter(**limiter_options)
     limiter.init_app(app)
 
     @app.errorhandler(RateLimitExceeded)
