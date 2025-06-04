@@ -4,7 +4,6 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_limiter.errors import RateLimitExceeded
-from .helpers.utils import get_user_or_ip
 import redis
 import jwt
 
