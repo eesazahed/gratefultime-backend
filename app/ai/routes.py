@@ -5,8 +5,7 @@ from ..models import GratitudeEntry, User
 from ..helpers.utils import require_auth, convert_utc_to_local
 from ..config import Config
 from cryptography.fernet import Fernet
-from google import genai
-from google.genai.types import GenerateContentConfig
+import requests
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -24,13 +23,13 @@ def decrypt(token):
 def summarize_month_entries():
     user = db.session.query(User).filter_by(user_id=request.user_id).first()
     if not user or not user.user_timezone:
-        return jsonify({'error': 'User or timezone not found'}), 404
+        return jsonify({'message': 'User or timezone not found'}), 404
 
     now_utc = datetime.now(timezone.utc)
     try:
         now_user_tz = convert_utc_to_local(now_utc, user.user_timezone)
     except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'message': str(e)}), 400
 
     start_of_month_user = now_user_tz.replace(
         day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -59,7 +58,7 @@ def summarize_month_entries():
             date_local = convert_utc_to_local(
                 e.timestamp, user.user_timezone).date()
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify({'message': str(e)}), 400
 
         try:
             entry1 = decrypt(e.entry1)
@@ -67,7 +66,7 @@ def summarize_month_entries():
             entry3 = decrypt(e.entry3)
             user_prompt_response = decrypt(e.user_prompt_response)
         except Exception as decrypt_error:
-            return jsonify({'error': 'Decryption failed', 'details': str(decrypt_error)}), 500
+            return jsonify({'message': 'Error retrieving entries'}), 500
 
         combined_text += (
             f"  id: {e.id}\n"
@@ -87,7 +86,7 @@ def summarize_month_entries():
         f"{combined_text}"
     )
 
-    system_instruction = (
+    system_prompt = (
         "You receive journal entries. Each entry starts with a line formatted exactly as 'id: [number]'. "
         "Only use this id number when reporting violations.\n"
         "Flag and block only entries containing explicit references to real-world illegal activity, direct threats of violence, hate speech, or explicit harm to self or others. "
@@ -100,16 +99,29 @@ def summarize_month_entries():
         "Summarize all non-flagged entries clearly and concisely in second-person voice."
     )
 
+    api_url = "https://ai.hackclub.com/chat/completions"
+    headers = {
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+    }
+
     try:
-        client = genai.Client(api_key=Config.GEMINI_API_KEY)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            config=GenerateContentConfig(
-                system_instruction=system_instruction),
-            contents=[user_prompt]
-        )
-        summary = response.text
-    except Exception as e:
-        return jsonify({'error': 'Failed to generate summary', 'details': str(e)}), 502
+        response = requests.post(
+            api_url, json=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        return jsonify({'message': 'Failed to contact AI service'}), 503
+
+    ai_response = response.json()
+
+    if "choices" not in ai_response or len(ai_response["choices"]) == 0:
+        return jsonify({'message': 'Invalid AI response format'}), 502
+
+    summary = ai_response["choices"][0].get("message", {}).get("content", "")
 
     return jsonify({'message': 'Monthly summary generated', 'summary': summary})

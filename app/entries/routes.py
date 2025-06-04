@@ -65,7 +65,7 @@ def add_entry():
         now_local = convert_utc_to_local(
             datetime.now(timezone.utc), user.user_timezone)
     except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'message': str(e)}), 400
 
     start_of_today_local = now_local.replace(
         hour=0, minute=0, second=0, microsecond=0)
@@ -125,13 +125,13 @@ def get_entry_days():
 def user_month_days():
     user = db.session.query(User).filter_by(user_id=request.user_id).first()
     if not user or not user.user_timezone:
-        return jsonify({'error': 'User or timezone not found'}), 404
+        return jsonify({'message': 'User or timezone not found'}), 404
 
     try:
         now_user_tz = convert_utc_to_local(
             datetime.now(timezone.utc), user.user_timezone)
     except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'message': str(e)}), 400
 
     start_of_month_user = now_user_tz.replace(
         day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -157,7 +157,7 @@ def user_month_days():
             local_date = convert_utc_to_local(
                 ts_utc, user.user_timezone).date()
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify({'message': str(e)}), 400
         days.add(local_date)
 
     return jsonify({'message': 'Count of days with entries this month', 'days_count': len(days)})
