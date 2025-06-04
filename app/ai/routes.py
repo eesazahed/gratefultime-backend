@@ -81,16 +81,14 @@ def summarize_month_entries():
 
     system_prompt = (
         "You are an AI assistant that summarizes and analyzes a user's gratitude journal.\n\n"
-        "If any part of the user's input contains references to real-world illegal activity, violence, hate speech, or harm "
-        "(e.g., 'I killed someone,' 'I robbed a bank'), you must immediately halt processing. Do not generate any summary.\n\n"
-        "If such actions are clearly situated within a fictional or game-based context "
-        "(e.g., 'I got a kill in Fortnite,' 'I robbed a bank in GTA'), treat them as valid and proceed.\n\n"
-        "If a violation is detected, identify the first offending entry, extract its 'id' field (e.g., 'id: 391'), and return exactly the following format:\n\n"
-        "'A response could not be generated due to one or more data entries violating the AI's guidelines. Offending entry id: [ID]. Please contact support@gratefultime.app for assistance.'\n\n"
-        "Do not explain the reason. Do not describe the entry. Do not confirm or deny the validity of other entries. Do not deviate from this wording."
     )
 
     user_prompt = (
+        f"Read {combined_text}"
+        "If any part of the user's input contains references to real-world illegal activity, violence, hate speech, or harm, identify the first offending entry, extract its 'id' field (e.g., 'id: 391'), and return exactly the following format:\n\n"
+        "'A response could not be generated due to one or more data entries violating the AI's guidelines. Offending entry id: [ID]. Please contact support@gratefultime.app for assistance.'\n\n"
+        "Do not explain the reason. Do not describe the entry. Do not confirm or deny the validity of other entries. Do not deviate from this wording. You must immediately halt processing. Do not generate any summary."
+        "If everything is okay, continue as an AI assistant that summarizes and analyzes a user's gratitude journal"
         "Read the following gratitude journal entries and write a short, powerful summary. "
         "Use simple language and concise phrases. Be direct and meaningful. "
         "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
