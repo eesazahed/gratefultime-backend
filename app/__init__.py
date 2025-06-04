@@ -88,6 +88,13 @@ def create_app():
         def server():
             return jsonify({'message': 'server running'})
 
+        @app.route('/api/v1/limiterdata')
+        @limiter.exempt
+        def limiterdata():
+            storage = limiter.storage
+            storage_type = type(storage).__name__ if storage else "None"
+            return jsonify({'storage_type': storage_type})
+
         @app.route('/')
         @limiter.exempt
         def index():
