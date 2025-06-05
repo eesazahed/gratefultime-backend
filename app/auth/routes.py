@@ -3,13 +3,9 @@ from ..models import User
 from .. import db
 from ..helpers.utils import encode_token, is_email_taken, verify_apple_token
 from ..config import Config
-import json
+import pytz
 
 auth_bp = Blueprint('auth', __name__)
-
-
-with open('../static/json/timezones.json') as f:
-    valid_timezones = set(json.load(f))
 
 
 @auth_bp.route('/applelogin', methods=['POST'])
@@ -24,7 +20,7 @@ def applelogin():
     if not user_timezone:
         return jsonify({'message': 'Could not fetch user timezone'}), 400
 
-    if user_timezone not in valid_timezones:
+    if user_timezone not in pytz.all_timezones:
         return jsonify({'message': 'Invalid timezone'}), 400
 
     given_name = fullName.get("givenName")
