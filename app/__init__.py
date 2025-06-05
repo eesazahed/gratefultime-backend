@@ -94,6 +94,11 @@ def create_app():
         def server():
             return jsonify({'message': 'server running', 'dev_mode': Config.DEV_MODE})
 
+        @app.route("/api/v1/timezones.json")
+        @limiter.exempt
+        def timezones():
+            return send_from_directory(app.static_folder, "json/timezones.json")
+
         @app.route('/api/v1/limiterdata')
         @limiter.exempt
         def limiterdata():
@@ -107,3 +112,5 @@ def create_app():
             return render_template('index.html', app_id=Config.APP_ID)
 
     return app
+
+# ...
