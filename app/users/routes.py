@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from .. import db
 from ..models import User, GratitudeEntry
 from ..helpers.utils import require_auth, format_timestamp
+import pytz
 
 users_bp = Blueprint('users', __name__)
 
@@ -60,10 +61,11 @@ def update_user_settings():
         user.preferred_unlock_time = unlock_time
 
     if 'user_timezone' in data:
-        try:
-            user.user_timezone = data['user_timezone']
-        except:
-            return jsonify({'message': 'Could not update time zone', 'errorCode': 'timezone'}), 400
+        tz = data['user_timezone']
+        if tz in pytz.all_timezones:
+            user.user_timezone = tz
+        else:
+            return jsonify({'message': 'Invalid time zone', 'errorCode': 'timezone'}), 400
 
     db.session.commit()
 
@@ -80,6 +82,7 @@ def update_user_settings():
 @require_auth
 def delete_account():
     user = User.query.get_or_404(request.user_id)
+    user.preferred_unlock_time = 20
     user.account_active = False
 
     GratitudeEntry.query.filter_by(user_id=request.user_id).delete()
