@@ -2,9 +2,13 @@ from flask import Blueprint, request, jsonify
 from .. import db
 from ..models import User, GratitudeEntry
 from ..helpers.utils import require_auth, format_timestamp
-import pytz
+import json
 
 users_bp = Blueprint('users', __name__)
+
+
+with open('../static/json/timezones.json') as f:
+    valid_timezones = set(json.load(f))
 
 
 # GET MOST RECENT ENTRY TIMESTAMP
@@ -62,7 +66,7 @@ def update_user_settings():
 
     if 'user_timezone' in data:
         tz = data['user_timezone']
-        if tz in pytz.all_timezones:
+        if tz in valid_timezones:
             user.user_timezone = tz
         else:
             return jsonify({'message': 'Invalid time zone', 'errorCode': 'timezone'}), 400
