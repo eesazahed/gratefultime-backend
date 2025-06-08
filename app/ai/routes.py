@@ -79,7 +79,7 @@ def summarize_month_entries():
         )
 
     user_prompt = (
-        "Read the following gratitude journal entries and write a short, powerful summary. "
+        "Read the following gratitude journal entries and write a short, powerful summary. Do not mention the ID."
         "Use simple language and concise phrases. Avoid emojis and slang. Be direct and meaningful. Speak with second-person pronouns, as if you are having a face-to-face friendly conversation."
         "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
         "Help the user see their growth and feel understood:\n\n"
@@ -88,7 +88,7 @@ def summarize_month_entries():
 
     system_prompt = (
         "You receive journal entries. Each entry starts with a line formatted exactly as 'id: [number]'. "
-        "Only use this id number when reporting violations.\n"
+        "Only use this id number when reporting violations. Do not disclose the id in any other situation.\n"
         "Flag and block only entries containing explicit references to real-world illegal activity, direct threats of violence, hate speech, or explicit harm to self or others. "
         "Do not flag or block any entries describing legal but morally ambiguous or socially questionable behavior (e.g., lying, laziness, etc.). "
         "Entries describing harmless activities or personal reflections are always safe.\n"
