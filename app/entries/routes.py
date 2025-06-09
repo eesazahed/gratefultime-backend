@@ -43,7 +43,7 @@ def get_entries():
             'entry1': decrypt(e.entry1),
             'entry2': decrypt(e.entry2),
             'entry3': decrypt(e.entry3),
-            'user_prompt': decrypt(e.user_prompt) if e.user_prompt else None,
+            'user_prompt': decrypt(e.user_prompt),
             'user_prompt_response': decrypt(e.user_prompt_response),
             'timestamp': format_timestamp(e.timestamp)
         } for e in entries],
@@ -51,15 +51,36 @@ def get_entries():
     })
 
 
-# SUBMITS AN ENTRY
+# SUBMIT ENTRY
 @entries_bp.route('', methods=['POST'])
 @require_auth
-def add_entry():
+def submit_entry():
     user = User.query.filter_by(user_id=request.user_id).first()
     if not user or not user.account_active:
-        return jsonify({'message': 'Your account is inactive', 'errorCode': 'submission'}), 403
+        return jsonify({'message': 'Please login to your account', 'errorCode': 'submission'}), 403
 
     data = request.get_json()
+
+    def is_invalid_field(value, min_length, max_length):
+        if not value or not value.strip():
+            return True
+        length = len(value.strip())
+        return length < min_length or length > max_length
+
+    validation_rules = {
+        'entry1': (50, 'entry1'),
+        'entry2': (50, 'entry2'),
+        'entry3': (50, 'entry3'),
+        'user_prompt': (100, 'submission'),
+        'user_prompt_response': (100, 'promptResponse')
+    }
+
+    min_length = 5
+
+    for field, (max_len, error_code) in validation_rules.items():
+        value = data.get(field, '')
+        if is_invalid_field(value, min_length, max_len):
+            return jsonify({'message': f'Must be between {min_length} to {max_len} characters', 'errorCode': error_code}), 403
 
     try:
         now_local = convert_utc_to_local(
@@ -84,8 +105,7 @@ def add_entry():
         entry1=encrypt(data['entry1']),
         entry2=encrypt(data['entry2']),
         entry3=encrypt(data['entry3']),
-        user_prompt=encrypt(data['user_prompt']) if data.get(
-            'user_prompt') else None,
+        user_prompt=encrypt(data['user_prompt']),
         user_prompt_response=encrypt(data['user_prompt_response'])
     )
     db.session.add(entry)
@@ -175,7 +195,7 @@ def get_entry(id):
         'entry1': decrypt(entry.entry1),
         'entry2': decrypt(entry.entry2),
         'entry3': decrypt(entry.entry3),
-        'user_prompt': decrypt(entry.user_prompt) if entry.user_prompt else None,
+        'user_prompt': decrypt(entry.user_prompt),
         'user_prompt_response': decrypt(entry.user_prompt_response),
         'timestamp': format_timestamp(entry.timestamp)
     }})

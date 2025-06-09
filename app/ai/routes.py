@@ -6,6 +6,7 @@ from ..helpers.utils import require_auth, convert_utc_to_local
 from ..config import Config
 from cryptography.fernet import Fernet
 import requests
+import json
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -52,34 +53,30 @@ def summarize_month_entries():
     if not entries:
         return jsonify({'message': 'No entries found for this month'}), 200
 
-    combined_text = ""
+    entries_data = []
     for e in entries:
-        try:
-            date_local = convert_utc_to_local(
-                e.timestamp, user.user_timezone).date()
-        except ValueError as e:
-            return jsonify({'message': str(e)}), 400
-
         try:
             entry1 = decrypt(e.entry1)
             entry2 = decrypt(e.entry2)
             entry3 = decrypt(e.entry3)
+            user_prompt = decrypt(e.user_prompt)
             user_prompt_response = decrypt(e.user_prompt_response)
-        except Exception as decrypt_error:
+        except Exception:
             return jsonify({'message': 'Error retrieving entries'}), 500
 
-        combined_text += (
-            f"  id: {e.id}\n"
-            f"  Date: {date_local}\n"
-            f"  Gratitude 1: {entry1}\n"
-            f"  Gratitude 2: {entry2}\n"
-            f"  Gratitude 3: {entry3}\n"
-            f"  User Prompt: {e.user_prompt}\n"
-            f"  User Response: {user_prompt_response}\n\n"
-        )
+        entries_data.append({
+            "id": e.id,
+            "gratitude_1": entry1,
+            "gratitude_2": entry2,
+            "gratitude_3": entry3,
+            "user_prompt": user_prompt,
+            "user_response": user_prompt_response
+        })
+
+    combined_text = json.dumps(entries_data, ensure_ascii=False, indent=2)
 
     user_prompt = (
-        "Read the following gratitude journal entries and write a short, powerful summary. Do not mention the ID. Do not mention the date as well."
+        "Read the following gratitude journal entries formatted as JSON and write a short, powerful summary. Do not mention the ID's of the entries."
         "Use simple language and concise phrases. Avoid emojis and slang. Be direct and meaningful. Speak with second-person pronouns, as if you are having a face-to-face friendly conversation."
         "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
         "Help the user see their growth and feel understood:\n\n"
@@ -87,8 +84,8 @@ def summarize_month_entries():
     )
 
     system_prompt = (
-        "You receive journal entries. Each entry starts with a line formatted exactly as 'id: [number]'. "
-        "Only use this id number when reporting violations. Do not disclose the id in any other situation.\n"
+        "You receive journal entries as a JSON array. Each object includes an 'id' field. "
+        "Only use this id when reporting violations. Do not disclose the id otherwise.\n"
         "Flag and block only entries containing explicit references to real-world illegal activity, direct threats of violence, hate speech, or explicit harm to self or others. "
         "Do not flag or block any entries describing legal but morally ambiguous or socially questionable behavior (e.g., lying, laziness, etc.). "
         "Entries describing harmless activities or personal reflections are always safe.\n"
@@ -114,7 +111,7 @@ def summarize_month_entries():
         response = requests.post(
             api_url, json=payload, headers=headers, timeout=30)
         response.raise_for_status()
-    except requests.RequestException as e:
+    except requests.RequestException:
         return jsonify({'message': 'Failed to contact AI service'}), 503
 
     ai_response = response.json()
