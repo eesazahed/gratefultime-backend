@@ -79,7 +79,7 @@ def summarize_month_entries():
         )
 
     user_prompt = (
-        "Read the following gratitude journal entries and write a short, powerful summary. Do not mention the ID."
+        "Read the following gratitude journal entries and write a short, powerful summary. Do not mention the ID. Do not mention the date as well."
         "Use simple language and concise phrases. Avoid emojis and slang. Be direct and meaningful. Speak with second-person pronouns, as if you are having a face-to-face friendly conversation."
         "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
         "Help the user see their growth and feel understood:\n\n"

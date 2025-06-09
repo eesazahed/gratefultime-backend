@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from .. import db
 from ..models import GratitudeEntry, User
 from ..helpers.utils import require_auth, format_timestamp, convert_utc_to_local
@@ -186,9 +186,23 @@ def get_entry(id):
 @require_auth
 def delete_entry(id):
     entry = GratitudeEntry.query.get_or_404(id)
+
+    user = User.query.filter_by(user_id=request.user_id).first()
+    if not user or not user.user_timezone:
+        return jsonify({'message': 'User or timezone not found'}), 404
+
     if entry.user_id != request.user_id:
         return jsonify({'message': 'Unauthorized'}), 403
-    if entry.timestamp.date() != datetime.now(timezone.utc).date():
+
+    try:
+        entry_local_date = convert_utc_to_local(
+            entry.timestamp, user.user_timezone).date()
+        now_local_date = convert_utc_to_local(
+            datetime.now(timezone.utc), user.user_timezone).date()
+    except ValueError as e:
+        return jsonify({'message': str(e)}), 400
+
+    if entry_local_date != now_local_date:
         return jsonify({'message': 'Can only delete today\'s entry'}), 400
 
     db.session.delete(entry)
