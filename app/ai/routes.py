@@ -76,7 +76,7 @@ def summarize_month_entries():
     combined_text = json.dumps(entries_data, ensure_ascii=False, indent=2)
 
     user_prompt = (
-        "Read the following gratitude journal entries formatted as JSON and write a short, powerful summary. Do not mention the ID's of the entries."
+        "Read the following gratitude journal entries formatted as JSON and write a short, powerful summary. Do not mention the ID's of the entries. Important! No mention of id under any circumstances."
         "Use simple language and concise phrases. Avoid emojis and slang. Be direct and meaningful. Speak with second-person pronouns, as if you are having a face-to-face friendly conversation."
         "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
         "Help the user see their growth and feel understood:\n\n"
