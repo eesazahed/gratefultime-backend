@@ -68,11 +68,11 @@ def submit_entry():
         return length < min_length or length > max_length
 
     validation_rules = {
-        'entry1': (50, 'entry1'),
-        'entry2': (50, 'entry2'),
-        'entry3': (50, 'entry3'),
+        'entry1': (100, 'entry1'),
+        'entry2': (100, 'entry2'),
+        'entry3': (100, 'entry3'),
         'user_prompt': (100, 'submission'),
-        'user_prompt_response': (100, 'promptResponse')
+        'user_prompt_response': (200, 'promptResponse')
     }
 
     min_length = 5
