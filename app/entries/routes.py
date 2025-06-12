@@ -71,7 +71,7 @@ def submit_entry():
         'entry1': (100, 'entry1'),
         'entry2': (100, 'entry2'),
         'entry3': (100, 'entry3'),
-        'user_prompt': (100, 'submission'),
+        'user_prompt': (200, 'submission'),
         'user_prompt_response': (200, 'promptResponse')
     }
 
