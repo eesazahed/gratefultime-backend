@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -100,6 +100,11 @@ def create_app():
             storage = limiter.storage
             storage_type = type(storage).__name__ if storage else "None"
             return jsonify({'storage_type': storage_type})
+
+        @app.route('/download')
+        @limiter.exempt
+        def download():
+            return redirect(f"https://apps.apple.com/app/id{Config.APP_ID}")
 
         @app.route('/')
         @limiter.exempt
