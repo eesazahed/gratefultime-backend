@@ -109,7 +109,7 @@ def create_app():
         @app.route('/')
         @limiter.exempt
         def index():
-            return render_template('index.html', app_id=Config.APP_ID)
+            return render_template('index.html')
 
     return app
 
