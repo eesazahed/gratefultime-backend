@@ -111,7 +111,7 @@ def create_app():
         def limiterdata():
             storage = limiter.storage
             storage_type = type(storage).__name__ if storage else "None"
-            return jsonify({'storage_type': storage_type, 'strategy': limiter._strategy})
+            return jsonify({'storage_type': storage_type})
 
         @app.route('/api/v1/commit')
         @limiter.exempt
