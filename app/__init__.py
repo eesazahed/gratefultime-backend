@@ -7,6 +7,7 @@ from flask_limiter.errors import RateLimitExceeded
 from werkzeug.middleware.proxy_fix import ProxyFix
 import redis
 import jwt
+import os
 
 db = SQLAlchemy()
 
@@ -33,29 +34,40 @@ def create_app():
                 pass
         return get_remote_address()
 
-    limiter_options = {
-        "key_func": get_user_or_ip,
-        "strategy": "fixed-window",
-        "headers_enabled": True,
-        "default_limits": ["10 per minute"],
-        "app": app
-    }
+    strategy = "fixed-window"
+    storage_uri = None
+    storage_options = {}
 
     try:
         redis_url = Config.REDIS_URL
         pool = redis.connection.BlockingConnectionPool.from_url(
             redis_url, socket_connect_timeout=5)
-
         client = redis.Redis(connection_pool=pool)
         client.ping()
 
+        strategy = "moving-window"
+
         if redis_url.startswith("unix://"):
-            limiter_options["storage_uri"] = f"redis+{redis_url}"
+            storage_uri = f"redis+{redis_url}"
         else:
-            limiter_options["storage_uri"] = redis_url
-        limiter_options["storage_options"] = {"connection_pool": pool}
-    except Exception as e:
+            storage_uri = redis_url
+
+        storage_options = {"connection_pool": pool}
+    except Exception:
         pass
+
+    limiter_options = {
+        "key_func": get_user_or_ip,
+        "strategy": strategy,
+        "headers_enabled": True,
+        "default_limits": ["10 per minute"],
+        "app": app
+    }
+
+    if storage_uri:
+        limiter_options["storage_uri"] = storage_uri
+    if storage_options:
+        limiter_options["storage_options"] = storage_options
 
     limiter = Limiter(**limiter_options)
     limiter.init_app(app)
@@ -101,6 +113,23 @@ def create_app():
             storage_type = type(storage).__name__ if storage else "None"
             return jsonify({'storage_type': storage_type})
 
+        @app.route('/api/v1/commit')
+        @limiter.exempt
+        def commit():
+            try:
+                output = os.popen(
+                    'git log -1 --pretty=format:"%h|%s|%cr"').read()
+                commit_hash, description, time = output.strip().split('|')
+                return jsonify({
+                    'most_recent_commit': commit_hash,
+                    'description': description,
+                    'time': time
+                })
+            except Exception:
+                return jsonify({
+                    'error': 'Could not read git commit'
+                }), 500
+
         @app.route('/download')
         @limiter.exempt
         def download():
@@ -112,5 +141,3 @@ def create_app():
             return render_template('index.html')
 
     return app
-
-# ...
