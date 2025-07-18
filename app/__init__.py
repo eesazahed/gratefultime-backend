@@ -38,23 +38,23 @@ def create_app():
     storage_uri = None
     storage_options = {}
 
-    # try:
-    #     redis_url = Config.REDIS_URL
-    #     pool = redis.connection.BlockingConnectionPool.from_url(
-    #         redis_url, socket_connect_timeout=5)
-    #     client = redis.Redis(connection_pool=pool)
-    #     client.ping()
+    try:
+        redis_url = Config.REDIS_URL
+        pool = redis.connection.BlockingConnectionPool.from_url(
+            redis_url, socket_connect_timeout=5)
+        client = redis.Redis(connection_pool=pool)
+        client.ping()
 
-    #     strategy = "moving-window"
+        strategy = "moving-window"
 
-    #     if redis_url.startswith("unix://"):
-    #         storage_uri = f"redis+{redis_url}"
-    #     else:
-    #         storage_uri = redis_url
+        if redis_url.startswith("unix://"):
+            storage_uri = f"redis+{redis_url}"
+        else:
+            storage_uri = redis_url
 
-    #     storage_options = {"connection_pool": pool}
-    # except Exception:
-    #     pass
+        storage_options = {"connection_pool": pool}
+    except Exception:
+        pass
 
     limiter_options = {
         "key_func": get_user_or_ip,
