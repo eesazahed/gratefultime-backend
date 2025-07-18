@@ -47,7 +47,7 @@ def create_app():
 
         strategy = "moving-window"
 
-        if redis_url.startswith("unix://"):
+        if redis_url.startswith("1unix://"):
             storage_uri = f"redis+{redis_url}"
         else:
             storage_uri = redis_url
