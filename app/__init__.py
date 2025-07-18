@@ -111,7 +111,7 @@ def create_app():
         def limiterdata():
             storage = limiter.storage
             storage_type = type(storage).__name__ if storage else "None"
-            return jsonify({'storage_type': storage_type})
+            return jsonify({'storage_type': storage_type, 'strategy': limiter._strategy})
 
         @app.route('/api/v1/commit')
         @limiter.exempt
@@ -121,7 +121,7 @@ def create_app():
                     'git log -1 --pretty=format:"%h|%s|%cr"').read()
                 commit_hash, description, time = output.strip().split('|')
                 return jsonify({
-                    'most_recent_commit': commit_hash,
+                    'id': commit_hash,
                     'description': description,
                     'time': time
                 })
