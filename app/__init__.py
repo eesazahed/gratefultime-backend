@@ -121,7 +121,7 @@ def create_app():
                     'git log -1 --pretty=format:"%h|%s|%cr"').read()
                 commit_hash, description, time = output.strip().split('|')
                 return jsonify({
-                    'id': commit_hash,
+                    'hash': commit_hash,
                     'description': description,
                     'time': time
                 })
