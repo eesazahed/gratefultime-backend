@@ -72,14 +72,6 @@ def create_app():
     limiter = Limiter(**limiter_options)
     limiter.init_app(app)
 
-    @app.errorhandler(RateLimitExceeded)
-    def handle_rate_limit_exceeded(e):
-        return jsonify({
-            'message': 'Rate limit exceeded',
-            'error': 'too_many_requests',
-            'status_code': 429
-        }), 429
-
     with app.app_context():
         from .auth.routes import auth_bp
         from .entries.routes import entries_bp
@@ -95,6 +87,22 @@ def create_app():
 
         from .models import User, GratitudeEntry
         db.create_all()
+
+        @app.errorhandler(RateLimitExceeded)
+        def handle_rate_limit_exceeded(e):
+            return jsonify({
+                'message': 'Rate limit exceeded',
+                'error': 'too_many_requests',
+                'status_code': 429
+            }), 429
+
+        @app.errorhandler(404)
+        def handle_404(e):
+            return jsonify({
+                'message': 'Resource not found',
+                'error': 'not_found',
+                'status_code': 404
+            }), 404
 
         @app.route("/robots.txt")
         @limiter.exempt
