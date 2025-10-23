@@ -11,6 +11,11 @@ import json
 ai_bp = Blueprint('ai', __name__)
 
 
+GEMINI_API_KEY = Config.GEMINI_API_KEY
+GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent"
+
+
 def get_cipher():
     return Fernet(Config.ENCRYPTION_KEY)
 
@@ -75,20 +80,13 @@ def summarize_month_entries():
 
     combined_text = json.dumps(entries_data, ensure_ascii=False, indent=2)
 
-    user_prompt = (
-        "Read the following gratitude journal entries formatted as JSON and write a short, powerful summary. Do not mention the ID's of the entries. Important! No mention of id under any circumstances."
-        "Use simple language and concise phrases. Avoid emojis and slang. Be direct and meaningful. Speak with second-person pronouns, as if you are having a face-to-face friendly conversation."
-        "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
-        "Help the user see their growth and feel understood:\n\n"
-        f"{combined_text}"
-    )
-
     system_prompt = (
         "You receive journal entries as a JSON array. Each object includes an 'id' field. "
         "Only use this id when reporting violations. Do not disclose the id otherwise.\n"
-        "Flag and block only entries containing explicit references to real-world illegal activity, direct threats of violence, hate speech, or explicit harm to self or others. "
-        "Do not flag or block any entries describing legal but morally ambiguous or socially questionable behavior (e.g., lying, laziness, etc.). "
-        "Entries describing harmless activities or personal reflections are always safe.\n"
+        "Flag and block only entries containing explicit references to real-world illegal activity, direct threats of violence, "
+        "hate speech, or explicit harm to self or others. "
+        "Do not flag or block any entries describing legal but morally ambiguous or socially questionable behavior "
+        "(e.g., lying, laziness, etc.). Entries describing harmless activities or personal reflections are always safe.\n"
         "If a flagged entry is found, do not summarize it or anything else. Instead, return exactly:\n\n"
         "'A response could not be generated due to one or more data entries violating the AI's guidelines. "
         "Offending entry id: [ID]. Please contact support@gratefultime.app for assistance.'\n\n"
@@ -96,29 +94,46 @@ def summarize_month_entries():
         "Summarize all non-flagged entries clearly and concisely in second-person voice."
     )
 
-    api_url = "https://ai.hackclub.com/chat/completions"
+    user_prompt = (
+        "Read the following gratitude journal entries formatted as JSON and write a short, powerful summary. "
+        "Do not mention the IDs of the entries. Use simple language and concise phrases. Avoid emojis and slang. "
+        "Be direct and meaningful. Speak with second-person pronouns, as if you are having a friendly, face-to-face conversation. "
+        "Highlight the main themes, emotional tone, repeated ideas, and any changes in mindset. "
+        "Help the user see their growth and feel understood:\n\n"
+        f"{combined_text}"
+    )
+
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY
     }
+
     payload = {
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+        "contents": [
+            {"parts": [{"text": f"{system_prompt}\n\n{user_prompt}"}]}
         ]
     }
 
     try:
         response = requests.post(
-            api_url, json=payload, headers=headers, timeout=30)
+            GEMINI_API_URL, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
-    except requests.RequestException:
-        return jsonify({'message': 'Failed to contact AI service'}), 503
+    except requests.RequestException as e:
+        print("❌ Gemini request failed:", e)
+        return jsonify({'message': 'Failed to contact AI service', 'error': str(e)}), 503
 
-    ai_response = response.json()
+    try:
+        data = response.json()
+    except ValueError:
+        return jsonify({'message': 'Invalid response from AI service'}), 502
 
-    if "choices" not in ai_response or len(ai_response["choices"]) == 0:
-        return jsonify({'message': 'Invalid AI response format'}), 502
+    summary = ""
+    if "candidates" in data and len(data["candidates"]) > 0:
+        parts = data["candidates"][0].get("content", {}).get("parts", [])
+        if parts and isinstance(parts, list) and "text" in parts[0]:
+            summary = parts[0]["text"]
 
-    summary = ai_response["choices"][0].get("message", {}).get("content", "")
+    if not summary:
+        return jsonify({'message': 'Invalid AI response format', 'raw': data}), 502
 
     return jsonify({'message': 'Monthly summary generated', 'summary': summary})
